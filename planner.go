@@ -87,6 +87,7 @@ const (
 	recipeButterfly31
 	recipeButterfly32
 	recipeRadix4
+	recipeRaders
 	recipeBluestein
 )
 
@@ -147,9 +148,15 @@ func (p *Planner) designFft(length int) (*recipe, int) {
 		if isPowerOfTwo(length) && length > 32 {
 			r = recipeRadix4
 		} else {
-			// For non-optimized sizes, use Bluestein's algorithm
-			// Bluestein makes ANY size O(n log n) via chirp-Z transform!
-			r = recipeBluestein
+			// For non-optimized sizes, check if it's prime
+			factors := ComputePrimeFactors(length)
+			if factors.IsPrime() && length <= 97 {
+				// Use Rader's for small/medium primes (more efficient than Bluestein's)
+				r = recipeRaders
+			} else {
+				// Use Bluestein's for large primes or composite sizes
+				r = recipeBluestein
+			}
 		}
 	}
 
@@ -205,6 +212,13 @@ func (p *Planner) buildFft(recipe *recipe, length int, direction Direction) Fft 
 		return &fftAdapter{inner: algorithm.NewButterfly32(dir)}
 	case recipeRadix4:
 		return &fftAdapter{inner: algorithm.NewRadix4(length, dir)}
+	case recipeRaders:
+		// Create FFT of size length-1 for Rader's algorithm
+		// Recursively plan the inner FFT
+		innerLength := length - 1
+		innerRecipe, _ := p.designFft(innerLength)
+		innerFftImpl := p.buildFft(innerRecipe, innerLength, direction)
+		return &fftAdapter{inner: algorithm.NewRaders(innerFftImpl.(*fftAdapter).inner)}
 	case recipeBluestein:
 		return &fftAdapter{inner: algorithm.NewBluestein(length, dir)}
 	default:

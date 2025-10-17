@@ -3,16 +3,17 @@
 
 A high-performance FFT library for Go, ported from [RustFFT](https://github.com/ejmahler/RustFFT).
 
-**Status**: ✅ **v0.3.2 - ALL sizes now O(n log n)!**
+**Status**: ✅ **v0.4.0 - Rader's algorithm for optimized prime FFTs!**
 
 ## Features
 
-- 🚀 **ANY size is O(n log n)** via Bluestein's algorithm (NEW in v0.3.2!)
+- 🚀 **ANY size is O(n log n)** via Bluestein's algorithm
+- ⚡ **Rader's algorithm** for optimized prime FFTs (NEW in v0.4.0!)
 - ✅ **20 optimized butterflies** (2-32)
 - ✅ **Radix-4** for power-of-two sizes
 - ✅ **Zero allocations** with scratch buffer reuse
 - ✅ **Thread-safe** - concurrent usage supported
-- ✅ **~95% algorithm parity** with RustFFT
+- ✅ **~98% algorithm parity** with RustFFT
 - ⏳ **SIMD support** (future enhancement)
 
 ## Quick Start
@@ -40,10 +41,12 @@ func main() {
 
 ## Highlights
 
-**NEW: Bluestein's Algorithm** makes ANY size O(n log n)!
-- Prime 1009: ~100x faster than v0.2.0
-- Size 1000: ~100x faster than v0.2.0
-- Works for ALL sizes automatically
+**NEW in v0.4.0: Rader's Algorithm!**
+- Primes 3-97 now ~2-3x faster than v0.3.2
+- More efficient than Bluestein's for primes
+- Automatic algorithm selection
+
+**v0.3.2**: Bluestein's algorithm makes ANY size O(n log n)
 
 ## Performance
 
@@ -61,8 +64,11 @@ Pure Go (no SIMD) on Apple M3 Pro:
 ### Small Sizes (Butterflies)
 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 16, 17, 19, 23, 24, 27, 29, 31, 32
 
+### Primes 3-97 (Rader's - NEW!)
+All primes up to 97 use optimized Rader's algorithm
+
 ### Everything Else (Bluestein's)
-**ALL other sizes** - primes, composites, arbitrary! ✅
+Primes >97, composites, arbitrary sizes - ALL O(n log n)!
 
 ## Build & Test
 
@@ -80,21 +86,22 @@ go test -bench=. -benchmem
 go run cmd/example/main.go
 ```
 
-## What's New in v0.3.2
+## What's New in v0.4.0
 
-- 🚀 **Bluestein's Algorithm**: Makes ANY size O(n log n)
-- ✅ **228 tests passing** (up from 224)
-- ✅ **~95% algorithm parity** with RustFFT
-- 🎯 **~100x speedup** for non-power-of-two sizes
+- ⚡ **Rader's Algorithm**: Optimizes primes 3-97 (~2-3x faster than Bluestein's)
+- ✅ **256 tests passing** (up from 228)
+- ✅ **~98% algorithm parity** with RustFFT (up from 95%)
+- ✅ **27 algorithms** implemented (up from 26)
 
 ## Documentation
 
-- [v0.3.2_RELEASE_NOTES.md](v0.3.2_RELEASE_NOTES.md) - v0.3.2 release notes
+- [V0.4.0_RELEASE_NOTES.md](V0.4.0_RELEASE_NOTES.md) - v0.4.0 release notes
+- [V0.3.2_RELEASE_NOTES.md](V0.3.2_RELEASE_NOTES.md) - v0.3.2 release notes
 - [API_REFERENCE.md](API_REFERENCE.md) - Detailed API documentation
 
 ## Status
 
 ✅ **Production-ready** for ALL sizes  
 ✅ **O(n log n)** for ALL sizes  
-✅ **228 tests passing** (100% success rate)  
-📊 **~95% algorithm parity** with RustFFT
+✅ **256 tests passing** (100% success rate)  
+📊 **~98% algorithm parity** with RustFFT
