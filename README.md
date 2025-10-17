@@ -7,9 +7,9 @@
 [![Tests](https://img.shields.io/badge/tests-256%20passing-success)](https://github.com/10d9e/gofft)
 [![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)](https://github.com/10d9e/gofft)
 
-A high-performance FFT library for Go, ported from [RustFFT](https://github.com/ejmahler/RustFFT).
-
 <img width="300" height="300" alt="image" src="https://github.com/user-attachments/assets/a45b2e1a-ee46-4c50-9dea-1b06d56ffc35" />
+
+A high-performance FFT library for Go, ported from [RustFFT](https://github.com/ejmahler/RustFFT).
 
 **Status**: ✅ **v0.4.0 - Rader's algorithm for optimized prime FFTs!**
 
