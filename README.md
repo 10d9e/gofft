@@ -1,42 +1,55 @@
-# gofft (prototype SIMD-ready FFT scaffolding)
+# gofft
 
-This repo contains a prototype of a RustFFT-like Go FFT library skeleton with:
-- Portable radix-2/4/8 butterfly helpers
-- Twiddle-aware portable kernels (radix-4 unrolled by 2j, radix-8)
-- SIMD dispatch seams and **working AVX2/NEON assembly** for `cmuladd`
-- Packed 2j SIMD radix-4 butterfly implementations (AVX2 and NEON)
-- Runtime CPU feature detection via `golang.org/x/sys/cpu`
+A high-performance FFT library for Go.
 
-> Note: This is a scaffold so you can drop in highly optimized assembly for butterflies.
-> The portable versions are complete and used as fallbacks. Some symbols are placeholders
-> (e.g., radix-8 SIMD hooks) and can be filled later without changing public APIs.
+**Status**: Core algorithms work in pure golang, SIMD acceleration in progress.
 
-## Build & test
+## Features
 
-```bash
-# from repository root
-go build ./...
-# optional: add your tests under pkg/gofft
-```
+- Fast FFT computation for arbitrary sizes
+- Multiple optimized algorithms:
+  - Butterflies for common small sizes (2, 3, 4, 8, 16, 32)
+  - Radix-4 for power-of-two sizes
+  - DFT fallback for other sizes
+- Thread-safe - all FFT instances can be used concurrently
+- Architecture-specific SIMD optimizations (planned):
+  - x86_64: SSE4.1, AVX/FMA
+  - ARM64: NEON
 
-## Examples
-
-Build and run the demo:
-
-```bash
-go run ./cmd/fft-demo -n 1024
-go run ./cmd/fft-parallel -n 16384 -workers 0
-```
-
-## Portable vs SIMD toggle (for benchmarks)
-
-You can force portable implementations at runtime for apples-to-apples comparisons:
+## Quick Start
 
 ```go
-import "github.com/example/gofft/pkg/gofft/simd"
+package main
 
-simd.ForcePortable(true)  // force portable
-simd.ForcePortable(false) // leave current bindings (SIMD if available)
+import (
+    "github.com/10d9e/gofft/pkg/gofft"
+)
+
+func main() {
+    // Create a planner
+    planner := gofft.NewPlanner()
+    
+    // Plan a forward FFT of size 1024
+    fft := planner.PlanForward(1024)
+    
+    // Create and process data
+    buffer := make([]complex128, 1024)
+    // ... fill buffer with data ...
+    fft.Process(buffer)
+}
 ```
 
-See `BenchmarkFFT_SIMD_*` vs `BenchmarkFFT_Portable_*`.
+## Build & Test
+
+```bash
+# Build
+go build ./...
+
+# Run tests
+go test ./pkg/gofft/...
+
+# Run benchmarks
+go test -bench=. ./pkg/gofft/...
+```
+
+See [pkg/gofft/README.md](pkg/gofft/README.md) for detailed documentation.
