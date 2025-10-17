@@ -115,11 +115,13 @@ func (m *MixedRadix) ProcessWithScratch(buffer, scratch []complex128) {
 	// STEP 4: Transpose back to (width x height)
 	transpose(m.height, m.width, selfScratch, buffer)
 
-	// STEP 5: Perform width-sized FFTs
-	// The widthFft will process multiple FFTs of size width
-	m.widthFft.ProcessWithScratch(buffer, heightScratch)
+	// STEP 5: Perform width-sized FFTs out-of-place (buffer → selfScratch)
+	// Copy buffer to selfScratch, process there
+	copy(selfScratch, buffer)
+	m.widthFft.ProcessWithScratch(selfScratch, innerScratch)
 
-	// Result is now in buffer, which is correct
+	// STEP 6: Transpose final result (width x height) → buffer
+	transpose(m.width, m.height, selfScratch, buffer)
 }
 
 func (m *MixedRadix) ProcessOutOfPlace(input, output, scratch []complex128) {

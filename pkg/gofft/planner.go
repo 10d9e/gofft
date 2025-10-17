@@ -87,6 +87,7 @@ const (
 	recipeButterfly31
 	recipeButterfly32
 	recipeRadix4
+	recipeBluestein
 )
 
 // designFft creates a recipe for an FFT of the given length
@@ -146,18 +147,9 @@ func (p *Planner) designFft(length int) (*recipe, int) {
 		if isPowerOfTwo(length) && length > 32 {
 			r = recipeRadix4
 		} else {
-			// For composite sizes, we'll use MixedRadix
-			// For prime sizes, we'll fall back to DFT
-			factors := ComputePrimeFactors(length)
-			if factors.IsPrime() {
-				// Prime size - use DFT for now (TODO: Rader's/Bluestein's)
-				r = recipeDft
-			} else {
-				// Composite size - decompose and use MixedRadix
-				// For now, use simple factorization
-				// TODO: implement smart factorization (Good-Thomas when coprime, etc.)
-				r = recipeDft // Will be replaced with MixedRadix recipe
-			}
+			// For non-optimized sizes, use Bluestein's algorithm
+			// Bluestein makes ANY size O(n log n) via chirp-Z transform!
+			r = recipeBluestein
 		}
 	}
 
@@ -213,6 +205,8 @@ func (p *Planner) buildFft(recipe *recipe, length int, direction Direction) Fft 
 		return &fftAdapter{inner: algorithm.NewButterfly32(dir)}
 	case recipeRadix4:
 		return &fftAdapter{inner: algorithm.NewRadix4(length, dir)}
+	case recipeBluestein:
+		return &fftAdapter{inner: algorithm.NewBluestein(length, dir)}
 	default:
 		panic("unknown recipe type")
 	}
