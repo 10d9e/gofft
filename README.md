@@ -1,4 +1,5 @@
 # gofft
+<img width="300" height="300" alt="image" src="https://github.com/user-attachments/assets/a45b2e1a-ee46-4c50-9dea-1b06d56ffc35" />
 
 A high-performance FFT library for Go.
 
