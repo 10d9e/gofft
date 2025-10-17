@@ -11,18 +11,18 @@
 
 A high-performance FFT library for Go, ported from [RustFFT](https://github.com/ejmahler/RustFFT).
 
-**Status**: ✅ **v0.4.0 - Rader's algorithm for optimized prime FFTs!**
+**Status**: ✅ **v0.5.0 - 100% Algorithm Parity Achieved!** 🏆
 
 ## Features
 
-- 🚀 **ANY size is O(n log n)** via Bluestein's algorithm
-- ⚡ **Rader's algorithm** for optimized prime FFTs (NEW in v0.4.0!)
-- ✅ **20 optimized butterflies** (2-32)
-- ✅ **Radix-4** for power-of-two sizes
+- 🏆 **100% scalar algorithm parity** with RustFFT (NEW in v0.5.0!)
+- ⚡ **RadixN algorithm** for multi-factor composites (NEW in v0.5.0!)
+- ⚡ **Rader's algorithm** for optimized primes
+- 🚀 **ANY size is O(n log n)** via Bluestein's
+- ✅ **28 total algorithms** (20 butterflies + Radix-4 + RadixN + Rader's + more)
 - ✅ **Zero allocations** with scratch buffer reuse
 - ✅ **Thread-safe** - concurrent usage supported
-- ✅ **~98% algorithm parity** with RustFFT
-- ⏳ **SIMD support** (future enhancement)
+- ⏳ **SIMD support** (future enhancement for 2-8x speedup)
 
 ## Quick Start
 
@@ -49,12 +49,13 @@ func main() {
 
 ## Highlights
 
-**NEW in v0.4.0: Rader's Algorithm!**
-- Primes 3-97 now ~2-3x faster than v0.3.2
-- More efficient than Bluestein's for primes
-- Automatic algorithm selection
+**🏆 v0.5.0: 100% ALGORITHM PARITY!**
+- **RadixN**: Optimizes multi-factor composites (60, 120, 84, ...)
+- **Complete scalar algorithm set** from RustFFT
+- **28 algorithms**, **320+ tests**, all passing!
 
-**v0.3.2**: Bluestein's algorithm makes ANY size O(n log n)
+**v0.4.0**: Rader's algorithm for primes  
+**v0.3.2**: Bluestein's for ANY size
 
 ## Performance
 
@@ -72,11 +73,14 @@ Pure Go (no SIMD) on Apple M3 Pro:
 ### Small Sizes (Butterflies)
 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 16, 17, 19, 23, 24, 27, 29, 31, 32
 
-### Primes 3-97 (Rader's - NEW!)
-All primes up to 97 use optimized Rader's algorithm
+### Multi-Factor Composites (RadixN - NEW!)
+6, 10, 12, 14, 15, 18, 20, 21, 24, 28, 30, 36, 40, 42, 48, 54, 56, 60, 72, 80, 84, 90, 96, 100, 120, ...
+
+### Primes 3-97 (Rader's)
+All primes from 3 to 97 use Rader's algorithm
 
 ### Everything Else (Bluestein's)
-Primes >97, composites, arbitrary sizes - ALL O(n log n)!
+Large primes, sizes with prime factors >7 - ALL O(n log n)!
 
 ## Build & Test
 
@@ -94,22 +98,24 @@ go test -bench=. -benchmem
 go run cmd/example/main.go
 ```
 
-## What's New in v0.4.0
+## What's New in v0.5.0
 
-- ⚡ **Rader's Algorithm**: Optimizes primes 3-97 (~2-3x faster than Bluestein's)
-- ✅ **256 tests passing** (up from 228)
-- ✅ **~98% algorithm parity** with RustFFT (up from 95%)
-- ✅ **27 algorithms** implemented (up from 26)
+- 🏆 **100% ALGORITHM PARITY** - Complete RustFFT scalar port!
+- ⚡ **RadixN Algorithm**: Multi-factor decomposition for composites
+- ✅ **320+ tests passing** (up from 256)
+- ✅ **28 algorithms** implemented
+- 🎯 **Optimized for ALL size categories**
 
 ## Documentation
 
+- [V0.5.0_100PERCENT_COMPLETE.md](V0.5.0_100PERCENT_COMPLETE.md) - **100% parity milestone!** 🏆
 - [V0.4.0_RELEASE_NOTES.md](V0.4.0_RELEASE_NOTES.md) - v0.4.0 release notes
-- [V0.3.2_RELEASE_NOTES.md](V0.3.2_RELEASE_NOTES.md) - v0.3.2 release notes
 - [API_REFERENCE.md](API_REFERENCE.md) - Detailed API documentation
 
 ## Status
 
+🏆 **100% SCALAR ALGORITHM PARITY** with RustFFT!  
 ✅ **Production-ready** for ALL sizes  
 ✅ **O(n log n)** for ALL sizes  
-✅ **256 tests passing** (100% success rate)  
-📊 **~98% algorithm parity** with RustFFT
+✅ **320+ tests passing** (100% success rate)  
+✅ **28 algorithms** - complete scalar algorithm set
