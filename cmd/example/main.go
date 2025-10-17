@@ -11,7 +11,6 @@ import (
 
 func main() {
 	fmt.Println("gofft - Go FFT Library Example")
-	fmt.Println("================================\n")
 
 	// Example 1: Basic FFT
 	basicExample()
