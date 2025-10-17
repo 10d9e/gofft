@@ -532,3 +532,436 @@ func (b *Butterfly32) performFftOutOfPlace(input, output []complex128) {
 	copy(output, input)
 	b.performFft(output)
 }
+
+// Butterfly5 implements a size-5 FFT
+type Butterfly5 struct {
+	direction Direction
+	twiddle1  complex128
+	twiddle2  complex128
+}
+
+// NewButterfly5 creates a new Butterfly5 instance
+func NewButterfly5(direction Direction) *Butterfly5 {
+	return &Butterfly5{
+		direction: direction,
+		twiddle1:  twiddleFactor(1, 5, direction),
+		twiddle2:  twiddleFactor(2, 5, direction),
+	}
+}
+
+func (b *Butterfly5) Len() int                  { return 5 }
+func (b *Butterfly5) Direction() Direction      { return b.direction }
+func (b *Butterfly5) InplaceScratchLen() int    { return 0 }
+func (b *Butterfly5) OutOfPlaceScratchLen() int { return 0 }
+func (b *Butterfly5) ImmutableScratchLen() int  { return 0 }
+
+func (b *Butterfly5) Process(buffer []complex128) {
+	b.ProcessWithScratch(buffer, nil)
+}
+
+func (b *Butterfly5) ProcessWithScratch(buffer, scratch []complex128) {
+	for i := 0; i < len(buffer); i += 5 {
+		b.performFft(buffer[i : i+5])
+	}
+}
+
+func (b *Butterfly5) ProcessOutOfPlace(input, output, scratch []complex128) {
+	for i := 0; i < len(input); i += 5 {
+		b.performFftOutOfPlace(input[i:i+5], output[i:i+5])
+	}
+}
+
+func (b *Butterfly5) ProcessImmutable(input []complex128, output, scratch []complex128) {
+	b.ProcessOutOfPlace(input, output, scratch)
+}
+
+func (b *Butterfly5) performFft(buffer []complex128) {
+	// Using the formula from RustFFT with symmetry optimizations
+	x14p := buffer[1] + buffer[4]
+	x14n := buffer[1] - buffer[4]
+	x23p := buffer[2] + buffer[3]
+	x23n := buffer[2] - buffer[3]
+	sum := buffer[0] + x14p + x23p
+
+	// Compute real parts
+	b14re_a := real(buffer[0]) + real(b.twiddle1)*real(x14p) + real(b.twiddle2)*real(x23p)
+	b14re_b := imag(b.twiddle1)*imag(x14n) + imag(b.twiddle2)*imag(x23n)
+	b23re_a := real(buffer[0]) + real(b.twiddle2)*real(x14p) + real(b.twiddle1)*real(x23p)
+	b23re_b := imag(b.twiddle2)*imag(x14n) - imag(b.twiddle1)*imag(x23n)
+
+	// Compute imaginary parts
+	b14im_a := imag(buffer[0]) + real(b.twiddle1)*imag(x14p) + real(b.twiddle2)*imag(x23p)
+	b14im_b := imag(b.twiddle1)*real(x14n) + imag(b.twiddle2)*real(x23n)
+	b23im_a := imag(buffer[0]) + real(b.twiddle2)*imag(x14p) + real(b.twiddle1)*imag(x23p)
+	b23im_b := imag(b.twiddle2)*real(x14n) - imag(b.twiddle1)*real(x23n)
+
+	// Assemble outputs
+	buffer[0] = sum
+	buffer[1] = complex(b14re_a-b14re_b, b14im_a+b14im_b)
+	buffer[2] = complex(b23re_a-b23re_b, b23im_a+b23im_b)
+	buffer[3] = complex(b23re_a+b23re_b, b23im_a-b23im_b)
+	buffer[4] = complex(b14re_a+b14re_b, b14im_a-b14im_b)
+}
+
+func (b *Butterfly5) performFftOutOfPlace(input, output []complex128) {
+	copy(output, input)
+	b.performFft(output)
+}
+
+// Butterfly6 implements a size-6 FFT using Good-Thomas algorithm
+type Butterfly6 struct {
+	direction  Direction
+	butterfly3 *Butterfly3
+}
+
+// NewButterfly6 creates a new Butterfly6 instance
+func NewButterfly6(direction Direction) *Butterfly6 {
+	return &Butterfly6{
+		direction:  direction,
+		butterfly3: NewButterfly3(direction),
+	}
+}
+
+func (b *Butterfly6) Len() int                  { return 6 }
+func (b *Butterfly6) Direction() Direction      { return b.direction }
+func (b *Butterfly6) InplaceScratchLen() int    { return 0 }
+func (b *Butterfly6) OutOfPlaceScratchLen() int { return 0 }
+func (b *Butterfly6) ImmutableScratchLen() int  { return 0 }
+
+func (b *Butterfly6) Process(buffer []complex128) {
+	b.ProcessWithScratch(buffer, nil)
+}
+
+func (b *Butterfly6) ProcessWithScratch(buffer, scratch []complex128) {
+	for i := 0; i < len(buffer); i += 6 {
+		b.performFft(buffer[i : i+6])
+	}
+}
+
+func (b *Butterfly6) ProcessOutOfPlace(input, output, scratch []complex128) {
+	for i := 0; i < len(input); i += 6 {
+		b.performFftOutOfPlace(input[i:i+6], output[i:i+6])
+	}
+}
+
+func (b *Butterfly6) ProcessImmutable(input []complex128, output, scratch []complex128) {
+	b.ProcessOutOfPlace(input, output, scratch)
+}
+
+func (b *Butterfly6) performFft(buffer []complex128) {
+	// Good-Thomas algorithm (GCD(2,3) = 1, so no twiddle factors needed)
+	// Step 1: Reorder input
+	scratchA := [3]complex128{buffer[0], buffer[2], buffer[4]}
+	scratchB := [3]complex128{buffer[3], buffer[5], buffer[1]}
+
+	// Step 2: Column FFTs (3-point)
+	b.butterfly3.performFft(scratchA[:])
+	b.butterfly3.performFft(scratchB[:])
+
+	// Step 3: Twiddle factors - SKIPPED (Good-Thomas)
+
+	// Step 4: Transpose - SKIPPED (will do non-contiguous FFTs)
+
+	// Step 5: Row FFTs (2-point)
+	for i := 0; i < 3; i++ {
+		temp := scratchA[i] + scratchB[i]
+		scratchB[i] = scratchA[i] - scratchB[i]
+		scratchA[i] = temp
+	}
+
+	// Step 6: Reorder output (includes transpose)
+	buffer[0] = scratchA[0]
+	buffer[1] = scratchB[1]
+	buffer[2] = scratchA[2]
+	buffer[3] = scratchB[0]
+	buffer[4] = scratchA[1]
+	buffer[5] = scratchB[2]
+}
+
+func (b *Butterfly6) performFftOutOfPlace(input, output []complex128) {
+	copy(output, input)
+	b.performFft(output)
+}
+
+// Butterfly7 implements a size-7 FFT
+type Butterfly7 struct {
+	direction Direction
+	twiddle1  complex128
+	twiddle2  complex128
+	twiddle3  complex128
+}
+
+// NewButterfly7 creates a new Butterfly7 instance
+func NewButterfly7(direction Direction) *Butterfly7 {
+	return &Butterfly7{
+		direction: direction,
+		twiddle1:  twiddleFactor(1, 7, direction),
+		twiddle2:  twiddleFactor(2, 7, direction),
+		twiddle3:  twiddleFactor(3, 7, direction),
+	}
+}
+
+func (b *Butterfly7) Len() int                  { return 7 }
+func (b *Butterfly7) Direction() Direction      { return b.direction }
+func (b *Butterfly7) InplaceScratchLen() int    { return 0 }
+func (b *Butterfly7) OutOfPlaceScratchLen() int { return 0 }
+func (b *Butterfly7) ImmutableScratchLen() int  { return 0 }
+
+func (b *Butterfly7) Process(buffer []complex128) {
+	b.ProcessWithScratch(buffer, nil)
+}
+
+func (b *Butterfly7) ProcessWithScratch(buffer, scratch []complex128) {
+	for i := 0; i < len(buffer); i += 7 {
+		b.performFft(buffer[i : i+7])
+	}
+}
+
+func (b *Butterfly7) ProcessOutOfPlace(input, output, scratch []complex128) {
+	for i := 0; i < len(input); i += 7 {
+		b.performFftOutOfPlace(input[i:i+7], output[i:i+7])
+	}
+}
+
+func (b *Butterfly7) ProcessImmutable(input []complex128, output, scratch []complex128) {
+	b.ProcessOutOfPlace(input, output, scratch)
+}
+
+func (b *Butterfly7) performFft(buffer []complex128) {
+	// For size 7, use symmetry: W3=W4*, W5=W2*, W6=W1*
+	x16p := buffer[1] + buffer[6]
+	x16n := buffer[1] - buffer[6]
+	x25p := buffer[2] + buffer[5]
+	x25n := buffer[2] - buffer[5]
+	x34p := buffer[3] + buffer[4]
+	x34n := buffer[3] - buffer[4]
+
+	sum := buffer[0] + x16p + x25p + x34p
+
+	// Real parts for output 1, 6
+	b16re_a := real(buffer[0]) + real(b.twiddle1)*real(x16p) + real(b.twiddle2)*real(x25p) + real(b.twiddle3)*real(x34p)
+	b16re_b := imag(b.twiddle1)*imag(x16n) + imag(b.twiddle2)*imag(x25n) + imag(b.twiddle3)*imag(x34n)
+
+	// Imaginary parts for output 1, 6
+	b16im_a := imag(buffer[0]) + real(b.twiddle1)*imag(x16p) + real(b.twiddle2)*imag(x25p) + real(b.twiddle3)*imag(x34p)
+	b16im_b := imag(b.twiddle1)*real(x16n) + imag(b.twiddle2)*real(x25n) + imag(b.twiddle3)*real(x34n)
+
+	// Real parts for output 2, 5
+	b25re_a := real(buffer[0]) + real(b.twiddle2)*real(x16p) + real(b.twiddle3)*real(x25p) + real(b.twiddle1)*real(x34p)
+	b25re_b := imag(b.twiddle2)*imag(x16n) - imag(b.twiddle3)*imag(x25n) - imag(b.twiddle1)*imag(x34n)
+
+	// Imaginary parts for output 2, 5
+	b25im_a := imag(buffer[0]) + real(b.twiddle2)*imag(x16p) + real(b.twiddle3)*imag(x25p) + real(b.twiddle1)*imag(x34p)
+	b25im_b := imag(b.twiddle2)*real(x16n) - imag(b.twiddle3)*real(x25n) - imag(b.twiddle1)*real(x34n)
+
+	// Real parts for output 3, 4
+	b34re_a := real(buffer[0]) + real(b.twiddle3)*real(x16p) + real(b.twiddle1)*real(x25p) + real(b.twiddle2)*real(x34p)
+	b34re_b := imag(b.twiddle3)*imag(x16n) - imag(b.twiddle1)*imag(x25n) + imag(b.twiddle2)*imag(x34n)
+
+	// Imaginary parts for output 3, 4
+	b34im_a := imag(buffer[0]) + real(b.twiddle3)*imag(x16p) + real(b.twiddle1)*imag(x25p) + real(b.twiddle2)*imag(x34p)
+	b34im_b := imag(b.twiddle3)*real(x16n) - imag(b.twiddle1)*real(x25n) + imag(b.twiddle2)*real(x34n)
+
+	buffer[0] = sum
+	buffer[1] = complex(b16re_a-b16re_b, b16im_a+b16im_b)
+	buffer[2] = complex(b25re_a-b25re_b, b25im_a+b25im_b)
+	buffer[3] = complex(b34re_a-b34re_b, b34im_a+b34im_b)
+	buffer[4] = complex(b34re_a+b34re_b, b34im_a-b34im_b)
+	buffer[5] = complex(b25re_a+b25re_b, b25im_a-b25im_b)
+	buffer[6] = complex(b16re_a+b16re_b, b16im_a-b16im_b)
+}
+
+func (b *Butterfly7) performFftOutOfPlace(input, output []complex128) {
+	copy(output, input)
+	b.performFft(output)
+}
+
+// Butterfly9 implements a size-9 FFT
+type Butterfly9 struct {
+	direction  Direction
+	butterfly3 *Butterfly3
+	twiddle1   complex128
+	twiddle2   complex128
+	twiddle4   complex128
+}
+
+// NewButterfly9 creates a new Butterfly9 instance
+func NewButterfly9(direction Direction) *Butterfly9 {
+	return &Butterfly9{
+		direction:  direction,
+		butterfly3: NewButterfly3(direction),
+		twiddle1:   twiddleFactor(1, 9, direction),
+		twiddle2:   twiddleFactor(2, 9, direction),
+		twiddle4:   twiddleFactor(4, 9, direction),
+	}
+}
+
+func (b *Butterfly9) Len() int                  { return 9 }
+func (b *Butterfly9) Direction() Direction      { return b.direction }
+func (b *Butterfly9) InplaceScratchLen() int    { return 0 }
+func (b *Butterfly9) OutOfPlaceScratchLen() int { return 0 }
+func (b *Butterfly9) ImmutableScratchLen() int  { return 0 }
+
+func (b *Butterfly9) Process(buffer []complex128) {
+	b.ProcessWithScratch(buffer, nil)
+}
+
+func (b *Butterfly9) ProcessWithScratch(buffer, scratch []complex128) {
+	for i := 0; i < len(buffer); i += 9 {
+		b.performFft(buffer[i : i+9])
+	}
+}
+
+func (b *Butterfly9) ProcessOutOfPlace(input, output, scratch []complex128) {
+	for i := 0; i < len(input); i += 9 {
+		b.performFftOutOfPlace(input[i:i+9], output[i:i+9])
+	}
+}
+
+func (b *Butterfly9) ProcessImmutable(input []complex128, output, scratch []complex128) {
+	b.ProcessOutOfPlace(input, output, scratch)
+}
+
+func (b *Butterfly9) performFft(buffer []complex128) {
+	// Mixed radix algorithm: 3x3 FFT
+	// Step 1: Transpose input into scratch
+	scratch0 := [3]complex128{buffer[0], buffer[3], buffer[6]}
+	scratch1 := [3]complex128{buffer[1], buffer[4], buffer[7]}
+	scratch2 := [3]complex128{buffer[2], buffer[5], buffer[8]}
+
+	// Step 2: Column FFTs
+	b.butterfly3.performFft(scratch0[:])
+	b.butterfly3.performFft(scratch1[:])
+	b.butterfly3.performFft(scratch2[:])
+
+	// Step 3: Apply twiddle factors
+	scratch1[1] = scratch1[1] * b.twiddle1
+	scratch1[2] = scratch1[2] * b.twiddle2
+	scratch2[1] = scratch2[1] * b.twiddle2
+	scratch2[2] = scratch2[2] * b.twiddle4
+
+	// Step 4: Transpose - SKIPPED
+
+	// Step 5: Row FFTs (3-point, strided across scratch arrays)
+	performStrided3(&scratch0[0], &scratch1[0], &scratch2[0], b.butterfly3.twiddle)
+	performStrided3(&scratch0[1], &scratch1[1], &scratch2[1], b.butterfly3.twiddle)
+	performStrided3(&scratch0[2], &scratch1[2], &scratch2[2], b.butterfly3.twiddle)
+
+	// Step 6: Copy to output (column-major)
+	buffer[0] = scratch0[0]
+	buffer[1] = scratch0[1]
+	buffer[2] = scratch0[2]
+	buffer[3] = scratch1[0]
+	buffer[4] = scratch1[1]
+	buffer[5] = scratch1[2]
+	buffer[6] = scratch2[0]
+	buffer[7] = scratch2[1]
+	buffer[8] = scratch2[2]
+}
+
+// performStrided3 performs a 3-point FFT on values passed by pointer (strided access)
+func performStrided3(val0, val1, val2 *complex128, twiddle complex128) {
+	xp := *val1 + *val2
+	xn := *val1 - *val2
+	sum := *val0 + xp
+
+	tempA := *val0 + complex(real(twiddle)*real(xp), real(twiddle)*imag(xp))
+	tempB := complex(-imag(twiddle)*imag(xn), imag(twiddle)*real(xn))
+
+	*val0 = sum
+	*val1 = tempA + tempB
+	*val2 = tempA - tempB
+}
+
+func (b *Butterfly9) performFftOutOfPlace(input, output []complex128) {
+	copy(output, input)
+	b.performFft(output)
+}
+
+// Butterfly12 implements a size-12 FFT
+type Butterfly12 struct {
+	direction  Direction
+	butterfly3 *Butterfly3
+	butterfly4 *Butterfly4
+	twiddle1   complex128
+	twiddle2   complex128
+}
+
+// NewButterfly12 creates a new Butterfly12 instance
+func NewButterfly12(direction Direction) *Butterfly12 {
+	return &Butterfly12{
+		direction:  direction,
+		butterfly3: NewButterfly3(direction),
+		butterfly4: NewButterfly4(direction),
+		twiddle1:   twiddleFactor(1, 12, direction),
+		twiddle2:   twiddleFactor(2, 12, direction),
+	}
+}
+
+func (b *Butterfly12) Len() int                  { return 12 }
+func (b *Butterfly12) Direction() Direction      { return b.direction }
+func (b *Butterfly12) InplaceScratchLen() int    { return 0 }
+func (b *Butterfly12) OutOfPlaceScratchLen() int { return 0 }
+func (b *Butterfly12) ImmutableScratchLen() int  { return 0 }
+
+func (b *Butterfly12) Process(buffer []complex128) {
+	b.ProcessWithScratch(buffer, nil)
+}
+
+func (b *Butterfly12) ProcessWithScratch(buffer, scratch []complex128) {
+	for i := 0; i < len(buffer); i += 12 {
+		b.performFft(buffer[i : i+12])
+	}
+}
+
+func (b *Butterfly12) ProcessOutOfPlace(input, output, scratch []complex128) {
+	for i := 0; i < len(input); i += 12 {
+		b.performFftOutOfPlace(input[i:i+12], output[i:i+12])
+	}
+}
+
+func (b *Butterfly12) ProcessImmutable(input []complex128, output, scratch []complex128) {
+	b.ProcessOutOfPlace(input, output, scratch)
+}
+
+func (b *Butterfly12) performFft(buffer []complex128) {
+	// Good-Thomas algorithm (GCD(4,3) = 1, so no twiddle factors needed)
+	// Step 1: Reorder input with precomputed Good-Thomas indices
+	scratch0 := [4]complex128{buffer[0], buffer[3], buffer[6], buffer[9]}
+	scratch1 := [4]complex128{buffer[4], buffer[7], buffer[10], buffer[1]}
+	scratch2 := [4]complex128{buffer[8], buffer[11], buffer[2], buffer[5]}
+
+	// Step 2: Column FFTs (4-point)
+	b.butterfly4.performFft(scratch0[:])
+	b.butterfly4.performFft(scratch1[:])
+	b.butterfly4.performFft(scratch2[:])
+
+	// Step 3: Twiddle factors - SKIPPED (Good-Thomas)
+
+	// Step 4: Transpose - SKIPPED (will do non-contiguous FFTs)
+
+	// Step 5: Row FFTs (3-point, strided across scratch arrays)
+	performStrided3(&scratch0[0], &scratch1[0], &scratch2[0], b.butterfly3.twiddle)
+	performStrided3(&scratch0[1], &scratch1[1], &scratch2[1], b.butterfly3.twiddle)
+	performStrided3(&scratch0[2], &scratch1[2], &scratch2[2], b.butterfly3.twiddle)
+	performStrided3(&scratch0[3], &scratch1[3], &scratch2[3], b.butterfly3.twiddle)
+
+	// Step 6: Reorder output with Good-Thomas pattern (includes transpose)
+	buffer[0] = scratch0[0]
+	buffer[1] = scratch1[1]
+	buffer[2] = scratch2[2]
+	buffer[3] = scratch0[3]
+	buffer[4] = scratch1[0]
+	buffer[5] = scratch2[1]
+	buffer[6] = scratch0[2]
+	buffer[7] = scratch1[3]
+	buffer[8] = scratch2[0]
+	buffer[9] = scratch0[1]
+	buffer[10] = scratch1[2]
+	buffer[11] = scratch2[3]
+}
+
+func (b *Butterfly12) performFftOutOfPlace(input, output []complex128) {
+	copy(output, input)
+	b.performFft(output)
+}

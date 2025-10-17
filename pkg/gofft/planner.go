@@ -69,8 +69,22 @@ const (
 	recipeButterfly2
 	recipeButterfly3
 	recipeButterfly4
+	recipeButterfly5
+	recipeButterfly6
+	recipeButterfly7
 	recipeButterfly8
+	recipeButterfly9
+	recipeButterfly11
+	recipeButterfly12
+	recipeButterfly13
 	recipeButterfly16
+	recipeButterfly17
+	recipeButterfly19
+	recipeButterfly23
+	recipeButterfly24
+	recipeButterfly27
+	recipeButterfly29
+	recipeButterfly31
 	recipeButterfly32
 	recipeRadix4
 )
@@ -93,10 +107,38 @@ func (p *Planner) designFft(length int) (*recipe, int) {
 		r = recipeButterfly3
 	case 4:
 		r = recipeButterfly4
+	case 5:
+		r = recipeButterfly5
+	case 6:
+		r = recipeButterfly6
+	case 7:
+		r = recipeButterfly7
 	case 8:
 		r = recipeButterfly8
+	case 9:
+		r = recipeButterfly9
+	case 11:
+		r = recipeButterfly11
+	case 12:
+		r = recipeButterfly12
+	case 13:
+		r = recipeButterfly13
 	case 16:
 		r = recipeButterfly16
+	case 17:
+		r = recipeButterfly17
+	case 19:
+		r = recipeButterfly19
+	case 23:
+		r = recipeButterfly23
+	case 24:
+		r = recipeButterfly24
+	case 27:
+		r = recipeButterfly27
+	case 29:
+		r = recipeButterfly29
+	case 31:
+		r = recipeButterfly31
 	case 32:
 		r = recipeButterfly32
 	default:
@@ -104,9 +146,18 @@ func (p *Planner) designFft(length int) (*recipe, int) {
 		if isPowerOfTwo(length) && length > 32 {
 			r = recipeRadix4
 		} else {
-			// Fall back to DFT for now
-			// TODO: implement more algorithms (MixedRadix, Raders, Bluesteins, etc.)
-			r = recipeDft
+			// For composite sizes, we'll use MixedRadix
+			// For prime sizes, we'll fall back to DFT
+			factors := ComputePrimeFactors(length)
+			if factors.IsPrime() {
+				// Prime size - use DFT for now (TODO: Rader's/Bluestein's)
+				r = recipeDft
+			} else {
+				// Composite size - decompose and use MixedRadix
+				// For now, use simple factorization
+				// TODO: implement smart factorization (Good-Thomas when coprime, etc.)
+				r = recipeDft // Will be replaced with MixedRadix recipe
+			}
 		}
 	}
 
@@ -116,23 +167,52 @@ func (p *Planner) designFft(length int) (*recipe, int) {
 
 // buildFft constructs an FFT instance from a recipe
 func (p *Planner) buildFft(recipe *recipe, length int, direction Direction) Fft {
+	dir := toAlgoDirection(direction)
 	switch *recipe {
 	case recipeDft:
-		return &fftAdapter{inner: algorithm.NewDft(length, toAlgoDirection(direction))}
+		return &fftAdapter{inner: algorithm.NewDft(length, dir)}
 	case recipeButterfly2:
-		return &fftAdapter{inner: algorithm.NewButterfly2(toAlgoDirection(direction))}
+		return &fftAdapter{inner: algorithm.NewButterfly2(dir)}
 	case recipeButterfly3:
-		return &fftAdapter{inner: algorithm.NewButterfly3(toAlgoDirection(direction))}
+		return &fftAdapter{inner: algorithm.NewButterfly3(dir)}
 	case recipeButterfly4:
-		return &fftAdapter{inner: algorithm.NewButterfly4(toAlgoDirection(direction))}
+		return &fftAdapter{inner: algorithm.NewButterfly4(dir)}
+	case recipeButterfly5:
+		return &fftAdapter{inner: algorithm.NewButterfly5(dir)}
+	case recipeButterfly6:
+		return &fftAdapter{inner: algorithm.NewButterfly6(dir)}
+	case recipeButterfly7:
+		return &fftAdapter{inner: algorithm.NewButterfly7(dir)}
 	case recipeButterfly8:
-		return &fftAdapter{inner: algorithm.NewButterfly8(toAlgoDirection(direction))}
+		return &fftAdapter{inner: algorithm.NewButterfly8(dir)}
+	case recipeButterfly9:
+		return &fftAdapter{inner: algorithm.NewButterfly9(dir)}
+	case recipeButterfly11:
+		return &fftAdapter{inner: algorithm.NewButterfly11(dir)}
+	case recipeButterfly12:
+		return &fftAdapter{inner: algorithm.NewButterfly12(dir)}
+	case recipeButterfly13:
+		return &fftAdapter{inner: algorithm.NewButterfly13(dir)}
 	case recipeButterfly16:
-		return &fftAdapter{inner: algorithm.NewButterfly16(toAlgoDirection(direction))}
+		return &fftAdapter{inner: algorithm.NewButterfly16(dir)}
+	case recipeButterfly17:
+		return &fftAdapter{inner: algorithm.NewButterfly17(dir)}
+	case recipeButterfly19:
+		return &fftAdapter{inner: algorithm.NewButterfly19(dir)}
+	case recipeButterfly23:
+		return &fftAdapter{inner: algorithm.NewButterfly23(dir)}
+	case recipeButterfly24:
+		return &fftAdapter{inner: algorithm.NewButterfly24(dir)}
+	case recipeButterfly27:
+		return &fftAdapter{inner: algorithm.NewButterfly27(dir)}
+	case recipeButterfly29:
+		return &fftAdapter{inner: algorithm.NewButterfly29(dir)}
+	case recipeButterfly31:
+		return &fftAdapter{inner: algorithm.NewButterfly31(dir)}
 	case recipeButterfly32:
-		return &fftAdapter{inner: algorithm.NewButterfly32(toAlgoDirection(direction))}
+		return &fftAdapter{inner: algorithm.NewButterfly32(dir)}
 	case recipeRadix4:
-		return &fftAdapter{inner: algorithm.NewRadix4(length, toAlgoDirection(direction))}
+		return &fftAdapter{inner: algorithm.NewRadix4(length, dir)}
 	default:
 		panic("unknown recipe type")
 	}
