@@ -3,11 +3,11 @@
 
 A high-performance FFT library for Go, ported from [RustFFT](https://github.com/ejmahler/RustFFT).
 
-**Status**: ✅ **v0.3.0 - ALL sizes now O(n log n)!**
+**Status**: ✅ **v0.3.2 - ALL sizes now O(n log n)!**
 
 ## Features
 
-- 🚀 **ANY size is O(n log n)** via Bluestein's algorithm (NEW in v0.3.0!)
+- 🚀 **ANY size is O(n log n)** via Bluestein's algorithm (NEW in v0.3.2!)
 - ✅ **20 optimized butterflies** (2-32)
 - ✅ **Radix-4** for power-of-two sizes
 - ✅ **Zero allocations** with scratch buffer reuse
@@ -21,7 +21,7 @@ A high-performance FFT library for Go, ported from [RustFFT](https://github.com/
 package main
 
 import (
-    "github.com/10d9e/gofft/pkg/gofft"
+    "github.com/10d9e/gofft"
 )
 
 func main() {
@@ -71,16 +71,16 @@ Pure Go (no SIMD) on Apple M3 Pro:
 go build ./...
 
 # Run tests (all passing!)
-go test ./pkg/gofft/... -v
+go test -v
 
 # Run benchmarks
-go test ./pkg/gofft -bench=. -benchmem
+go test -bench=. -benchmem
 
 # Try the examples
 go run cmd/example/main.go
 ```
 
-## What's New in v0.3.0
+## What's New in v0.3.2
 
 - 🚀 **Bluestein's Algorithm**: Makes ANY size O(n log n)
 - ✅ **228 tests passing** (up from 224)
@@ -89,8 +89,8 @@ go run cmd/example/main.go
 
 ## Documentation
 
-- [V2_RELEASE_NOTES.md](V0.3.0_RELEASE_NOTES.md) - v0.3.0 release notes
-- [pkg/gofft/README.md](pkg/gofft/README.md) - API documentation
+- [v0.3.2_RELEASE_NOTES.md](v0.3.2_RELEASE_NOTES.md) - v0.3.2 release notes
+- [API_REFERENCE.md](API_REFERENCE.md) - Detailed API documentation
 
 ## Status
 

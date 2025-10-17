@@ -2,7 +2,7 @@
 
 A high-performance Fast Fourier Transform (FFT) library for Go.
 
-**Version**: v0.3.0  
+**Version**: v0.3.2
 **Status**: Production-ready for ALL sizes  
 
 ## Overview
@@ -11,12 +11,12 @@ This library provides O(n log n) FFT computation for **ANY size** using multiple
 
 - **Radix-4**: Optimized for power-of-two sizes (2-infinity)
 - **Butterflies**: 20 optimized algorithms for sizes 2-32
-- **Bluestein's** (NEW in v0.3.0): Makes ANY size O(n log n) via chirp-Z transform
+- **Bluestein's** (NEW in v0.3.2): Makes ANY size O(n log n) via chirp-Z transform
 - **DFT**: Reference implementation
 
 ## Features
 
-- 🚀 **O(n log n) for ANY size** (NEW in v0.3.0!)
+- 🚀 **O(n log n) for ANY size** (NEW in v0.3.2!)
 - Fast and accurate FFT computation
 - 26 optimized algorithms (20 butterflies + Radix-4 + Bluestein's + more)
 - Thread-safe planner with intelligent caching
@@ -27,7 +27,7 @@ This library provides O(n log n) FFT computation for **ANY size** using multiple
 ## Installation
 
 ```go
-import "github.com/10d9e/gofft/pkg/gofft"
+import "github.com/10d9e/gofft"
 ```
 
 ## Quick Start
@@ -37,7 +37,7 @@ package main
 
 import (
     "fmt"
-    "github.com/10d9e/gofft/pkg/gofft"
+    "github.com/10d9e/gofft"
 )
 
 func main() {
@@ -61,7 +61,7 @@ func main() {
 }
 ```
 
-## What's New in v0.3.0
+## What's New in v0.3.2
 
 ### Bluestein's Algorithm
 Makes ANY size O(n log n) by converting DFT into convolution:
@@ -71,11 +71,11 @@ Makes ANY size O(n log n) by converting DFT into convolution:
 
 ### Performance Impact
 ```
-Before v0.3.0:
+Before v0.3.2:
   Size 1009 (prime): O(n²) - slow
   Size 1000:         O(n²) - slow
 
-After v0.3.0:
+After v0.3.2:
   Size 1009: O(n log n) - ~100x faster! 🚀
   Size 1000: O(n log n) - ~100x faster! 🚀
 ```
@@ -179,7 +179,7 @@ go test ./pkg/gofft -bench=. -benchmem
 - [x] DFT (O(n²) reference)
 - [x] 20 Butterflies (2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 16, 17, 19, 23, 24, 27, 29, 31, 32)
 - [x] Radix-4 (power-of-two sizes)
-- [x] **Bluestein's** (ANY size, NEW in v0.3.0!)
+- [x] **Bluestein's** (ANY size, NEW in v0.3.2!)
 - [ ] RadixN (planned for v0.4.0)
 - [ ] Rader's (planned for v0.4.0)
 - [ ] MixedRadix (planned for v0.4.0)
