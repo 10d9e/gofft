@@ -1,7 +1,15 @@
 # gofft
-<img width="300" height="300" alt="image" src="https://github.com/user-attachments/assets/a45b2e1a-ee46-4c50-9dea-1b06d56ffc35" />
+[![Release](https://img.shields.io/badge/version-v0.4.0-blue)](https://github.com/10d9e/gofft/releases)
+[![Go CI](https://github.com/10d9e/gofft/actions/workflows/ci.yml/badge.svg)](https://github.com/10d9e/gofft/actions/workflows/ci.yml)
+[![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat&logo=go)](https://go.dev/)
+[![License](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
+[![Go Report Card](https://goreportcard.com/badge/github.com/10d9e/gofft)](https://goreportcard.com/report/github.com/10d9e/gofft)
+[![Tests](https://img.shields.io/badge/tests-256%20passing-success)](https://github.com/10d9e/gofft)
+[![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)](https://github.com/10d9e/gofft)
 
 A high-performance FFT library for Go, ported from [RustFFT](https://github.com/ejmahler/RustFFT).
+
+<img width="300" height="300" alt="image" src="https://github.com/user-attachments/assets/a45b2e1a-ee46-4c50-9dea-1b06d56ffc35" />
 
 **Status**: ✅ **v0.4.0 - Rader's algorithm for optimized prime FFTs!**
 
