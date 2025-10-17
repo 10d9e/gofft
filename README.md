@@ -19,3 +19,24 @@ go build ./...
 # optional: add your tests under pkg/gofft
 ```
 
+## Examples
+
+Build and run the demo:
+
+```bash
+go run ./cmd/fft-demo -n 1024
+go run ./cmd/fft-parallel -n 16384 -workers 0
+```
+
+## Portable vs SIMD toggle (for benchmarks)
+
+You can force portable implementations at runtime for apples-to-apples comparisons:
+
+```go
+import "github.com/example/gofft/pkg/gofft/simd"
+
+simd.ForcePortable(true)  // force portable
+simd.ForcePortable(false) // leave current bindings (SIMD if available)
+```
+
+See `BenchmarkFFT_SIMD_*` vs `BenchmarkFFT_Portable_*`.
