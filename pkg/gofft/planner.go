@@ -3,7 +3,7 @@ package gofft
 import (
 	"sync"
 
-	"github.com/example/gofft/pkg/gofft/algorithm"
+	"github.com/10d9e/gofft/pkg/gofft/algorithm"
 )
 
 // Planner creates FFT instances for arbitrary sizes

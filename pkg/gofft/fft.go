@@ -5,7 +5,7 @@
 //
 // Usage:
 //
-//	import "github.com/example/gofft/pkg/gofft"
+//	import "github.com/10d9e/gofft/pkg/gofft"
 //
 //	// Create a planner that automatically selects the best implementation
 //	planner := gofft.NewPlanner()

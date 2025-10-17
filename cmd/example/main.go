@@ -6,7 +6,7 @@ import (
 	"math"
 	"math/cmplx"
 
-	"github.com/example/gofft/pkg/gofft"
+	"github.com/10d9e/gofft/pkg/gofft"
 )
 
 func main() {
