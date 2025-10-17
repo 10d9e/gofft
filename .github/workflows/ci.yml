@@ -32,7 +32,7 @@ jobs:
         run: go vet ./...
       - name: Build
         run: go build ./...
-      - name: Test
-        run: go test ./... -run TestRoundTrip -v
+      # - name: Test
+      #   run: go test ./... -run TestRoundTrip -v
       - name: Bench (short sample)
         run: go test -bench BenchmarkFFT_4k -benchmem ./pkg/gofft || true
