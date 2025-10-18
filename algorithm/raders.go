@@ -75,9 +75,10 @@ func NewRaders(innerFft FftInterface) *Raders {
 	}
 }
 
-func (r *Raders) Len() int               { return r.length }
-func (r *Raders) Direction() Direction   { return r.direction }
-func (r *Raders) InplaceScratchLen() int { return r.inplaceScratchLen }
+func (r *Raders) Len() int                  { return r.length }
+func (r *Raders) Direction() Direction      { return r.direction }
+func (r *Raders) InplaceScratchLen() int    { return r.inplaceScratchLen }
+func (r *Raders) OutOfPlaceScratchLen() int { return r.outofplaceScratchLen }
 
 func (r *Raders) ProcessWithScratch(buffer, scratch []complex128) {
 	// Process each chunk of size r.length
@@ -86,6 +87,11 @@ func (r *Raders) ProcessWithScratch(buffer, scratch []complex128) {
 		workScratch := scratch[:r.inplaceScratchLen]
 		r.processOne(chunk, workScratch)
 	}
+}
+
+func (r *Raders) ProcessOutOfPlace(input, output, scratch []complex128) {
+	copy(output, input)
+	r.ProcessWithScratch(output, scratch)
 }
 
 func (r *Raders) processOne(buffer, scratch []complex128) {

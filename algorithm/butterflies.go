@@ -192,10 +192,16 @@ func (b *Butterfly4) performFftOutOfPlace(input, output []complex128) {
 	val3 = rotate90(val3, b.direction)
 
 	// Row FFTs
-	output[0] = val0 + val1
-	output[2] = val0 - val1
-	output[1] = val2 + val3
-	output[3] = val2 - val3
+	temp0 := val0 + val1
+	temp1 := val0 - val1
+	temp2 := val2 + val3
+	temp3 := val2 - val3
+
+	// Final transpose by swapping indices 1 and 2
+	output[0] = temp0
+	output[1] = temp2 // ← This should be temp2, not temp1
+	output[2] = temp1 // ← This should be temp1, not temp2
+	output[3] = temp3
 }
 
 // twiddleFactor computes a single twiddle factor

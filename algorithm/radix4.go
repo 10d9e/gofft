@@ -9,7 +9,9 @@ type FftInterface interface {
 	Len() int
 	Direction() Direction
 	InplaceScratchLen() int
+	OutOfPlaceScratchLen() int
 	ProcessWithScratch(buffer, scratch []complex128)
+	ProcessOutOfPlace(input, output, scratch []complex128)
 }
 
 // Radix4 implements an FFT algorithm optimized for power-of-two sizes

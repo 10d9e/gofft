@@ -3,6 +3,7 @@ package simd
 import (
 	"github.com/10d9e/gofft"
 	"github.com/10d9e/gofft/algorithm"
+	"github.com/10d9e/gofft/simd/neon"
 )
 
 // SIMDPlanner creates FFT instances optimized for SIMD
@@ -148,11 +149,50 @@ type neonButterflyAdapter struct {
 }
 
 func (a *neonButterflyAdapter) Process(buffer []complex128) {
-	// For now, use scalar implementation
-	// TODO: Import and use actual NEON butterflies
-	scalarFft := algorithm.NewDft(a.length, a.direction)
-	scratch := make([]complex128, scalarFft.InplaceScratchLen())
-	scalarFft.ProcessWithScratch(buffer, scratch)
+	// Use actual NEON butterfly implementations
+	switch a.length {
+	case 1:
+		neon.Butterfly1_NEON(buffer)
+	case 2:
+		neon.Butterfly2_NEON(buffer)
+	case 3:
+		neon.Butterfly3_NEON(buffer)
+	case 4:
+		neon.Butterfly4_NEON(buffer)
+	case 5:
+		neon.Butterfly5_NEON(buffer)
+	case 7:
+		neon.Butterfly7_NEON(buffer)
+	case 8:
+		neon.Butterfly8_NEON(buffer)
+	case 9:
+		neon.Butterfly9_NEON(buffer)
+	case 11:
+		neon.Butterfly11_NEON(buffer)
+	case 13:
+		neon.Butterfly13_NEON(buffer)
+	case 16:
+		neon.Butterfly16_NEON(buffer)
+	case 17:
+		neon.Butterfly17_NEON(buffer)
+	case 19:
+		neon.Butterfly19_NEON(buffer)
+	case 23:
+		neon.Butterfly23_NEON(buffer)
+	case 27:
+		neon.Butterfly27_NEON(buffer)
+	case 29:
+		neon.Butterfly29_NEON(buffer)
+	case 31:
+		neon.Butterfly31_NEON(buffer)
+	case 32:
+		neon.Butterfly32_NEON(buffer)
+	default:
+		// Fallback to scalar for unsupported sizes
+		scalarFft := algorithm.NewDft(a.length, a.direction)
+		scratch := make([]complex128, scalarFft.InplaceScratchLen())
+		scalarFft.ProcessWithScratch(buffer, scratch)
+	}
 }
 
 func (a *neonButterflyAdapter) Len() int {
@@ -170,11 +210,24 @@ type neonRadix4Adapter struct {
 }
 
 func (a *neonRadix4Adapter) Process(buffer []complex128) {
-	// For now, use scalar implementation
-	// TODO: Import and use actual NEON Radix-4
-	scalarFft := algorithm.NewDft(a.length, a.direction)
-	scratch := make([]complex128, scalarFft.InplaceScratchLen())
-	scalarFft.ProcessWithScratch(buffer, scratch)
+	// Use actual NEON Radix-4 implementations
+	switch a.length {
+	case 64:
+		neon.Radix4_64_NEON(buffer)
+	case 128:
+		neon.Radix4_128_NEON(buffer)
+	case 256:
+		neon.Radix4_256_NEON(buffer)
+	case 512:
+		neon.Radix4_512_NEON(buffer)
+	case 1024:
+		neon.Radix4_1024_NEON(buffer)
+	default:
+		// Fallback to scalar for unsupported sizes
+		scalarFft := algorithm.NewDft(a.length, a.direction)
+		scratch := make([]complex128, scalarFft.InplaceScratchLen())
+		scalarFft.ProcessWithScratch(buffer, scratch)
+	}
 }
 
 func (a *neonRadix4Adapter) Len() int {

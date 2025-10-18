@@ -76,9 +76,10 @@ func NewBluestein(length int, direction Direction) *Bluestein {
 	}
 }
 
-func (b *Bluestein) Len() int               { return b.length }
-func (b *Bluestein) Direction() Direction   { return b.direction }
-func (b *Bluestein) InplaceScratchLen() int { return 2 * b.fftSize }
+func (b *Bluestein) Len() int                  { return b.length }
+func (b *Bluestein) Direction() Direction      { return b.direction }
+func (b *Bluestein) InplaceScratchLen() int    { return 2 * b.fftSize }
+func (b *Bluestein) OutOfPlaceScratchLen() int { return 2 * b.fftSize }
 
 func (b *Bluestein) ProcessWithScratch(buffer, scratch []complex128) {
 	// Process each chunk of size b.length
@@ -87,6 +88,11 @@ func (b *Bluestein) ProcessWithScratch(buffer, scratch []complex128) {
 		workScratch := scratch[:2*b.fftSize]
 		b.processOne(chunk, workScratch)
 	}
+}
+
+func (b *Bluestein) ProcessOutOfPlace(input, output, scratch []complex128) {
+	copy(output, input)
+	b.ProcessWithScratch(output, scratch)
 }
 
 func (b *Bluestein) processOne(buffer, scratch []complex128) {

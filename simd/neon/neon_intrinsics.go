@@ -3,6 +3,7 @@
 package neon
 
 import (
+	"math"
 	"unsafe"
 )
 
@@ -114,51 +115,35 @@ func Butterfly4_NEON_Real(data []complex128) {
 		return
 	}
 
-	// 4-point butterfly using 2x2 mixed radix
-	// Step 1: 2-point butterflies
-	Butterfly2_NEON_Real(data[0:2])
-	Butterfly2_NEON_Real(data[2:4])
-
-	// Step 2: Apply twiddle factors (90-degree rotation for size-2)
-	// For size-4, the twiddle factor is i (0 + 1i)
-	// This means: (a + bi) * i = -b + ai
-	// So we need to swap real and imaginary parts and negate the new real part
-
-	// Apply twiddle to data[2] and data[3]
-	// data[2] *= i, data[3] *= i
-	for i := 2; i < 4; i++ {
-		re := real(data[i])
-		im := imag(data[i])
-		data[i] = complex(-im, re) // (a + bi) * i = -b + ai
-	}
-
-	// Step 3: Transpose and apply 2-point butterflies
-	// This is a simplified version - full implementation would use NEON transpose
-	temp0 := data[0]
-	temp1 := data[1]
-	temp2 := data[2]
-	temp3 := data[3]
-
-	// Transpose: [0,1,2,3] -> [0,2,1,3]
+	// Use correct scalar implementation for now
+	// TODO: Implement proper NEON assembly
+	// Implementation using radix-2 decomposition
+	// Column FFTs
+	temp0 := data[0] + data[2]
+	data[2] = data[0] - data[2]
 	data[0] = temp0
-	data[1] = temp2
-	data[2] = temp1
-	data[3] = temp3
 
-	// Step 4: Final 2-point butterflies
-	Butterfly2_NEON_Real(data[0:2])
-	Butterfly2_NEON_Real(data[2:4])
+	temp1 := data[1] + data[3]
+	data[3] = data[1] - data[3]
+	data[1] = temp1
 
-	// Step 5: Transpose back: [0,2,1,3] -> [0,1,2,3]
-	temp0 = data[0]
-	temp1 = data[1]
-	temp2 = data[2]
-	temp3 = data[3]
+	// Apply twiddle factor (rotate by 90 degrees)
+	// For forward FFT: multiply by -i
+	re := real(data[3])
+	im := imag(data[3])
+	data[3] = complex(im, -re) // (a + bi) * (-i) = b - ai
 
+	// Row FFTs
+	temp0 = data[0] + data[1]
+	data[1] = data[0] - data[1]
 	data[0] = temp0
-	data[1] = temp2
-	data[2] = temp1
-	data[3] = temp3
+
+	temp2 := data[2] + data[3]
+	data[3] = data[2] - data[3]
+	data[2] = temp2
+
+	// Final transpose (swap indices 1 and 2)
+	data[1], data[2] = data[2], data[1]
 }
 
 // Butterfly8_NEON_Real performs an 8-point butterfly using real NEON intrinsics
@@ -167,70 +152,47 @@ func Butterfly8_NEON_Real(data []complex128) {
 		return
 	}
 
-	// 8-point butterfly using 2x4 mixed radix
-	// Step 1: 2-point butterflies
-	for i := 0; i < 8; i += 2 {
-		Butterfly2_NEON_Real(data[i : i+2])
+	// Use correct scalar implementation for now
+	// TODO: Implement proper NEON assembly
+	// Mixed radix algorithm: 2x4 FFT
+	// Step 1: Transpose input into scratch arrays (even and odd indices)
+	scratch0 := [4]complex128{data[0], data[2], data[4], data[6]}
+	scratch1 := [4]complex128{data[1], data[3], data[5], data[7]}
+
+	// Step 2: Column FFTs (4-point FFTs)
+	// For scratch0
+	Butterfly4_NEON_Real(scratch0[:])
+	// For scratch1
+	Butterfly4_NEON_Real(scratch1[:])
+
+	// Step 3: Apply twiddle factors
+	// twiddle[1] = (rotate_90(x) + x) * sqrt(0.5)  = (x*(-i) + x) * sqrt(0.5) for forward
+	// twiddle[2] = rotate_90(x) = x * (-i) for forward
+	// twiddle[3] = (rotate_90(x) - x) * sqrt(0.5) = (x*(-i) - x) * sqrt(0.5) for forward
+	const root2 = 0.7071067811865476 // sqrt(0.5)
+
+	rot1 := complex(imag(scratch1[1]), -real(scratch1[1])) // rotate_90 for forward
+	scratch1[1] = (rot1 + scratch1[1]) * complex(root2, 0)
+
+	scratch1[2] = complex(imag(scratch1[2]), -real(scratch1[2])) // rotate_90 for forward
+
+	rot3 := complex(imag(scratch1[3]), -real(scratch1[3])) // rotate_90 for forward
+	scratch1[3] = (rot3 - scratch1[3]) * complex(root2, 0)
+
+	// Step 4: Transpose - skipped because we'll do non-contiguous FFTs
+
+	// Step 5: Row FFTs (2-point FFTs between corresponding elements)
+	for i := 0; i < 4; i++ {
+		temp := scratch0[i] + scratch1[i]
+		scratch1[i] = scratch0[i] - scratch1[i]
+		scratch0[i] = temp
 	}
 
-	// Step 2: Apply twiddle factors
-	// For size-8, we have twiddle factors: 1, w, w^2, w^3 where w = e^(-2πi/8)
-	// w = (1-i)/√2, w^2 = -i, w^3 = -(1+i)/√2
-
-	// Apply twiddles to data[2], data[4], data[6]
-	// data[2] *= w, data[4] *= w^2, data[6] *= w^3
-	const sqrt2 = 1.4142135623730951
-	const w_re = 1.0 / sqrt2
-	const w_im = -1.0 / sqrt2
-	const w2_re = 0.0
-	const w2_im = -1.0
-	const w3_re = -1.0 / sqrt2
-	const w3_im = -1.0 / sqrt2
-
-	// Apply w to data[2]
-	re := real(data[2])
-	im := imag(data[2])
-	data[2] = complex(re*w_re-im*w_im, re*w_im+im*w_re)
-
-	// Apply w^2 to data[4] (multiply by -i)
-	re = real(data[4])
-	im = imag(data[4])
-	data[4] = complex(im, -re)
-
-	// Apply w^3 to data[6]
-	re = real(data[6])
-	im = imag(data[6])
-	data[6] = complex(re*w3_re-im*w3_im, re*w3_im+im*w3_re)
-
-	// Step 3: Transpose and apply 4-point butterflies
-	// This is a simplified version - full implementation would use NEON transpose
-	temp := make([]complex128, 8)
-	copy(temp, data)
-
-	// Transpose 2x4 matrix
-	data[0] = temp[0]
-	data[1] = temp[2]
-	data[2] = temp[4]
-	data[3] = temp[6]
-	data[4] = temp[1]
-	data[5] = temp[3]
-	data[6] = temp[5]
-	data[7] = temp[7]
-
-	// Step 4: Apply 4-point butterflies
-	Butterfly4_NEON_Real(data[0:4])
-	Butterfly4_NEON_Real(data[4:8])
-
-	// Step 5: Transpose back
-	copy(temp, data)
-	data[0] = temp[0]
-	data[1] = temp[4]
-	data[2] = temp[1]
-	data[3] = temp[5]
-	data[4] = temp[2]
-	data[5] = temp[6]
-	data[6] = temp[3]
-	data[7] = temp[7]
+	// Step 6: Copy data to output (no transpose needed since we skipped step 4)
+	for i := 0; i < 4; i++ {
+		data[i] = scratch0[i]
+		data[i+4] = scratch1[i]
+	}
 }
 
 // ProcessVectorizedButterfly_Real processes data using real NEON-optimized butterflies
@@ -260,8 +222,45 @@ func butterfly16_fft_go(data []complex128) {
 		return
 	}
 
-	// Call assembly function
-	butterfly16_fft_asm(unsafe.Pointer(&data[0]))
+	// Use correct scalar implementation for now
+	// TODO: Implement proper NEON assembly
+	// Use radix-4 decomposition
+	// Column FFTs
+	for i := 0; i < 4; i++ {
+		chunk := []complex128{data[i], data[i+4], data[i+8], data[i+12]}
+		Butterfly4_NEON_Real(chunk)
+		data[i], data[i+4], data[i+8], data[i+12] = chunk[0], chunk[1], chunk[2], chunk[3]
+	}
+
+	// Apply twiddle factors
+	// Twiddle factors for 16-point FFT
+	twiddles := make([]complex128, 16)
+	for k := 0; k < 16; k++ {
+		angle := -2 * math.Pi * float64(k) / 16
+		twiddles[k] = complex(math.Cos(angle), math.Sin(angle))
+	}
+
+	for row := 1; row < 4; row++ {
+		for col := 0; col < 4; col++ {
+			idx := row*4 + col
+			data[idx] = data[idx] * twiddles[row*col%16]
+		}
+	}
+
+	// Row FFTs
+	Butterfly4_NEON_Real(data[0:4])
+	Butterfly4_NEON_Real(data[4:8])
+	Butterfly4_NEON_Real(data[8:12])
+	Butterfly4_NEON_Real(data[12:16])
+
+	// Transpose (simplified)
+	for i := 0; i < 4; i++ {
+		for j := i + 1; j < 4; j++ {
+			idx1 := i*4 + j
+			idx2 := j*4 + i
+			data[idx1], data[idx2] = data[idx2], data[idx1]
+		}
+	}
 }
 
 // butterfly32_fft_go performs a 32-point FFT using real NEON assembly
@@ -270,8 +269,24 @@ func butterfly32_fft_go(data []complex128) {
 		return
 	}
 
-	// Call assembly function
-	butterfly32_fft_asm(unsafe.Pointer(&data[0]))
+	// Use correct scalar implementation for now
+	// TODO: Implement proper NEON assembly
+	// 32-point FFT using direct DFT (simpler approach)
+	// Store original data
+	original := make([]complex128, 32)
+	copy(original, data)
+
+	// Apply DFT: X[k] = sum(n=0 to 31) x[n] * e^(-2πikn/32)
+	for k := 0; k < 32; k++ {
+		sum := complex(0, 0)
+		for n := 0; n < 32; n++ {
+			// Twiddle factor: e^(-2πikn/32)
+			angle := -2 * math.Pi * float64(k*n) / 32
+			twiddle := complex(math.Cos(angle), math.Sin(angle))
+			sum += original[n] * twiddle
+		}
+		data[k] = sum
+	}
 }
 
 // butterfly3_fft_go performs a 3-point FFT using real NEON assembly
@@ -280,8 +295,21 @@ func butterfly3_fft_go(data []complex128) {
 		return
 	}
 
-	// Call assembly function
-	butterfly3_fft_asm(unsafe.Pointer(&data[0]))
+	// Use correct scalar implementation for now
+	// TODO: Implement proper NEON assembly
+	xp := data[1] + data[2]
+	xn := data[1] - data[2]
+	sum := data[0] + xp
+
+	// Twiddle factor for 3-point FFT: e^(-2πi/3) = -0.5 - i*√3/2
+	twiddle := complex(-0.5, -0.8660254037844386)
+
+	tempA := data[0] + complex(real(twiddle)*real(xp), real(twiddle)*imag(xp))
+	tempB := complex(-imag(twiddle)*imag(xn), imag(twiddle)*real(xn))
+
+	data[0] = sum
+	data[1] = tempA + tempB
+	data[2] = tempA - tempB
 }
 
 // butterfly5_fft_go performs a 5-point FFT using real NEON assembly
@@ -290,8 +318,37 @@ func butterfly5_fft_go(data []complex128) {
 		return
 	}
 
-	// Call assembly function
-	butterfly5_fft_asm(unsafe.Pointer(&data[0]))
+	// Use correct scalar implementation for now
+	// TODO: Implement proper NEON assembly
+	// Twiddle factors for 5-point FFT
+	twiddle1 := complex(0.30901699437494745, -0.9510565162951535) // e^(-2πi/5)
+	twiddle2 := complex(-0.8090169943749473, -0.5877852522924731) // e^(-4πi/5)
+
+	// Using the formula from RustFFT with symmetry optimizations
+	x14p := data[1] + data[4]
+	x14n := data[1] - data[4]
+	x23p := data[2] + data[3]
+	x23n := data[2] - data[3]
+	sum := data[0] + x14p + x23p
+
+	// Compute real parts
+	b14re_a := real(data[0]) + real(twiddle1)*real(x14p) + real(twiddle2)*real(x23p)
+	b14re_b := imag(twiddle1)*imag(x14n) + imag(twiddle2)*imag(x23n)
+	b23re_a := real(data[0]) + real(twiddle2)*real(x14p) + real(twiddle1)*real(x23p)
+	b23re_b := imag(twiddle2)*imag(x14n) - imag(twiddle1)*imag(x23n)
+
+	// Compute imaginary parts
+	b14im_a := imag(data[0]) + real(twiddle1)*imag(x14p) + real(twiddle2)*imag(x23p)
+	b14im_b := imag(twiddle1)*real(x14n) + imag(twiddle2)*real(x23n)
+	b23im_a := imag(data[0]) + real(twiddle2)*imag(x14p) + real(twiddle1)*imag(x23p)
+	b23im_b := imag(twiddle2)*real(x14n) - imag(twiddle1)*real(x23n)
+
+	// Assemble outputs
+	data[0] = sum
+	data[1] = complex(b14re_a-b14re_b, b14im_a+b14im_b)
+	data[2] = complex(b23re_a-b23re_b, b23im_a+b23im_b)
+	data[3] = complex(b23re_a+b23re_b, b23im_a-b23im_b)
+	data[4] = complex(b14re_a+b14re_b, b14im_a-b14im_b)
 }
 
 // butterfly7_fft_go performs a 7-point FFT using real NEON assembly
@@ -300,8 +357,54 @@ func butterfly7_fft_go(data []complex128) {
 		return
 	}
 
-	// Call assembly function
-	butterfly7_fft_asm(unsafe.Pointer(&data[0]))
+	// Use correct scalar implementation for now
+	// TODO: Implement proper NEON assembly
+	// Twiddle factors for 7-point FFT
+	twiddle1 := complex(0.6234898018587336, -0.7818314824680298)   // e^(-2πi/7)
+	twiddle2 := complex(-0.22252093395631434, -0.9749279121818236) // e^(-4πi/7)
+	twiddle3 := complex(-0.9009688679024191, -0.4338837391175581)  // e^(-6πi/7)
+
+	// For size 7, use symmetry: W3=W4*, W5=W2*, W6=W1*
+	x16p := data[1] + data[6]
+	x16n := data[1] - data[6]
+	x25p := data[2] + data[5]
+	x25n := data[2] - data[5]
+	x34p := data[3] + data[4]
+	x34n := data[3] - data[4]
+
+	sum := data[0] + x16p + x25p + x34p
+
+	// Real parts for output 1, 6
+	b16re_a := real(data[0]) + real(twiddle1)*real(x16p) + real(twiddle2)*real(x25p) + real(twiddle3)*real(x34p)
+	b16re_b := imag(twiddle1)*imag(x16n) + imag(twiddle2)*imag(x25n) + imag(twiddle3)*imag(x34n)
+
+	// Imaginary parts for output 1, 6
+	b16im_a := imag(data[0]) + real(twiddle1)*imag(x16p) + real(twiddle2)*imag(x25p) + real(twiddle3)*imag(x34p)
+	b16im_b := imag(twiddle1)*real(x16n) + imag(twiddle2)*real(x25n) + imag(twiddle3)*real(x34n)
+
+	// Real parts for output 2, 5
+	b25re_a := real(data[0]) + real(twiddle2)*real(x16p) + real(twiddle3)*real(x25p) + real(twiddle1)*real(x34p)
+	b25re_b := imag(twiddle2)*imag(x16n) - imag(twiddle3)*imag(x25n) - imag(twiddle1)*imag(x34n)
+
+	// Imaginary parts for output 2, 5
+	b25im_a := imag(data[0]) + real(twiddle2)*imag(x16p) + real(twiddle3)*imag(x25p) + real(twiddle1)*imag(x34p)
+	b25im_b := imag(twiddle2)*real(x16n) - imag(twiddle3)*real(x25n) - imag(twiddle1)*real(x34n)
+
+	// Real parts for output 3, 4
+	b34re_a := real(data[0]) + real(twiddle3)*real(x16p) + real(twiddle1)*real(x25p) + real(twiddle2)*real(x34p)
+	b34re_b := imag(twiddle3)*imag(x16n) - imag(twiddle1)*imag(x25n) + imag(twiddle2)*imag(x34n)
+
+	// Imaginary parts for output 3, 4
+	b34im_a := imag(data[0]) + real(twiddle3)*imag(x16p) + real(twiddle1)*imag(x25p) + real(twiddle2)*imag(x34p)
+	b34im_b := imag(twiddle3)*real(x16n) - imag(twiddle1)*real(x25n) + imag(twiddle2)*real(x34n)
+
+	data[0] = sum
+	data[1] = complex(b16re_a-b16re_b, b16im_a+b16im_b)
+	data[2] = complex(b25re_a-b25re_b, b25im_a+b25im_b)
+	data[3] = complex(b34re_a-b34re_b, b34im_a+b34im_b)
+	data[4] = complex(b34re_a+b34re_b, b34im_a-b34im_b)
+	data[5] = complex(b25re_a+b25re_b, b25im_a-b25im_b)
+	data[6] = complex(b16re_a+b16re_b, b16im_a-b16im_b)
 }
 
 // butterfly6_fft_go performs a 6-point FFT using real NEON assembly
@@ -310,8 +413,44 @@ func butterfly6_fft_go(data []complex128) {
 		return
 	}
 
-	// Call assembly function
-	butterfly6_fft_asm(unsafe.Pointer(&data[0]))
+	// Use correct scalar implementation for now
+	// TODO: Implement proper NEON assembly
+	// Good-Thomas algorithm (GCD(2,3) = 1, so no twiddle factors needed)
+	// Step 1: Reorder input
+	scratchA := [3]complex128{data[0], data[2], data[4]}
+	scratchB := [3]complex128{data[3], data[5], data[1]}
+
+	// Step 2: Column FFTs (3-point)
+	// For scratchA
+	x0 := scratchA[0] + scratchA[1] + scratchA[2]
+	x1 := scratchA[0] + complex(-0.5, -0.8660254037844386)*scratchA[1] + complex(-0.5, 0.8660254037844386)*scratchA[2]
+	x2 := scratchA[0] + complex(-0.5, 0.8660254037844386)*scratchA[1] + complex(-0.5, -0.8660254037844386)*scratchA[2]
+	scratchA[0], scratchA[1], scratchA[2] = x0, x1, x2
+
+	// For scratchB
+	x0 = scratchB[0] + scratchB[1] + scratchB[2]
+	x1 = scratchB[0] + complex(-0.5, -0.8660254037844386)*scratchB[1] + complex(-0.5, 0.8660254037844386)*scratchB[2]
+	x2 = scratchB[0] + complex(-0.5, 0.8660254037844386)*scratchB[1] + complex(-0.5, -0.8660254037844386)*scratchB[2]
+	scratchB[0], scratchB[1], scratchB[2] = x0, x1, x2
+
+	// Step 3: Twiddle factors - SKIPPED (Good-Thomas)
+
+	// Step 4: Transpose - SKIPPED (will do non-contiguous FFTs)
+
+	// Step 5: Row FFTs (2-point)
+	for i := 0; i < 3; i++ {
+		temp := scratchA[i] + scratchB[i]
+		scratchB[i] = scratchA[i] - scratchB[i]
+		scratchA[i] = temp
+	}
+
+	// Step 6: Reorder output (includes transpose)
+	data[0] = scratchA[0]
+	data[1] = scratchB[1]
+	data[2] = scratchA[2]
+	data[3] = scratchB[0]
+	data[4] = scratchA[1]
+	data[5] = scratchB[2]
 }
 
 // butterfly12_fft_go performs a 12-point FFT using real NEON assembly
@@ -320,8 +459,112 @@ func butterfly12_fft_go(data []complex128) {
 		return
 	}
 
-	// Call assembly function
-	butterfly12_fft_asm(unsafe.Pointer(&data[0]))
+	// Use correct scalar implementation for now
+	// TODO: Implement proper NEON assembly
+	// Good-Thomas algorithm (GCD(4,3) = 1, so no twiddle factors needed)
+	// Step 1: Reorder input with precomputed Good-Thomas indices
+	scratch0 := [4]complex128{data[0], data[3], data[6], data[9]}
+	scratch1 := [4]complex128{data[4], data[7], data[10], data[1]}
+	scratch2 := [4]complex128{data[8], data[11], data[2], data[5]}
+
+	// Step 2: Column FFTs (4-point)
+	// For scratch0
+	temp0 := scratch0[0] + scratch0[2]
+	scratch0[2] = scratch0[0] - scratch0[2]
+	scratch0[0] = temp0
+	temp1 := scratch0[1] + scratch0[3]
+	scratch0[3] = scratch0[1] - scratch0[3]
+	scratch0[1] = temp1
+	// Apply twiddle factor (rotate by 90 degrees)
+	re := real(scratch0[3])
+	im := imag(scratch0[3])
+	scratch0[3] = complex(im, -re) // (a + bi) * (-i) = b - ai
+	// Row FFTs
+	temp0 = scratch0[0] + scratch0[1]
+	scratch0[1] = scratch0[0] - scratch0[1]
+	scratch0[0] = temp0
+	temp2 := scratch0[2] + scratch0[3]
+	scratch0[3] = scratch0[2] - scratch0[3]
+	scratch0[2] = temp2
+	// Final transpose (swap indices 1 and 2)
+	scratch0[1], scratch0[2] = scratch0[2], scratch0[1]
+
+	// For scratch1
+	temp0 = scratch1[0] + scratch1[2]
+	scratch1[2] = scratch1[0] - scratch1[2]
+	scratch1[0] = temp0
+	temp1 = scratch1[1] + scratch1[3]
+	scratch1[3] = scratch1[1] - scratch1[3]
+	scratch1[1] = temp1
+	// Apply twiddle factor (rotate by 90 degrees)
+	re = real(scratch1[3])
+	im = imag(scratch1[3])
+	scratch1[3] = complex(im, -re) // (a + bi) * (-i) = b - ai
+	// Row FFTs
+	temp0 = scratch1[0] + scratch1[1]
+	scratch1[1] = scratch1[0] - scratch1[1]
+	scratch1[0] = temp0
+	temp2 = scratch1[2] + scratch1[3]
+	scratch1[3] = scratch1[2] - scratch1[3]
+	scratch1[2] = temp2
+	// Final transpose (swap indices 1 and 2)
+	scratch1[1], scratch1[2] = scratch1[2], scratch1[1]
+
+	// For scratch2
+	temp0 = scratch2[0] + scratch2[2]
+	scratch2[2] = scratch2[0] - scratch2[2]
+	scratch2[0] = temp0
+	temp1 = scratch2[1] + scratch2[3]
+	scratch2[3] = scratch2[1] - scratch2[3]
+	scratch2[1] = temp1
+	// Apply twiddle factor (rotate by 90 degrees)
+	re = real(scratch2[3])
+	im = imag(scratch2[3])
+	scratch2[3] = complex(im, -re) // (a + bi) * (-i) = b - ai
+	// Row FFTs
+	temp0 = scratch2[0] + scratch2[1]
+	scratch2[1] = scratch2[0] - scratch2[1]
+	scratch2[0] = temp0
+	temp2 = scratch2[2] + scratch2[3]
+	scratch2[3] = scratch2[2] - scratch2[3]
+	scratch2[2] = temp2
+	// Final transpose (swap indices 1 and 2)
+	scratch2[1], scratch2[2] = scratch2[2], scratch2[1]
+
+	// Step 3: Twiddle factors - SKIPPED (Good-Thomas)
+
+	// Step 4: Transpose - SKIPPED (will do non-contiguous FFTs)
+
+	// Step 5: Row FFTs (3-point, strided across scratch arrays)
+	// performStrided3 for each row
+	for i := 0; i < 4; i++ {
+		// 3-point FFT on scratch0[i], scratch1[i], scratch2[i]
+		xp := scratch1[i] + scratch2[i]
+		xn := scratch1[i] - scratch2[i]
+		sum := scratch0[i] + xp
+
+		twiddle := complex(-0.5, -0.8660254037844386) // e^(-2πi/3)
+		tempA := scratch0[i] + complex(real(twiddle)*real(xp), real(twiddle)*imag(xp))
+		tempB := complex(-imag(twiddle)*imag(xn), imag(twiddle)*real(xn))
+
+		scratch0[i] = sum
+		scratch1[i] = tempA + tempB
+		scratch2[i] = tempA - tempB
+	}
+
+	// Step 6: Reorder output with Good-Thomas pattern (includes transpose)
+	data[0] = scratch0[0]
+	data[1] = scratch1[1]
+	data[2] = scratch2[2]
+	data[3] = scratch0[3]
+	data[4] = scratch1[0]
+	data[5] = scratch2[1]
+	data[6] = scratch0[2]
+	data[7] = scratch1[3]
+	data[8] = scratch2[0]
+	data[9] = scratch0[1]
+	data[10] = scratch1[2]
+	data[11] = scratch2[3]
 }
 
 // butterfly24_fft_go performs a 24-point FFT using real NEON assembly
@@ -330,8 +573,24 @@ func butterfly24_fft_go(data []complex128) {
 		return
 	}
 
-	// Call assembly function
-	butterfly24_fft_asm(unsafe.Pointer(&data[0]))
+	// Use correct scalar implementation for now
+	// TODO: Implement proper NEON assembly
+	// 24-point FFT using direct DFT (simpler approach)
+	// Store original data
+	original := make([]complex128, 24)
+	copy(original, data)
+
+	// Apply DFT: X[k] = sum(n=0 to 23) x[n] * e^(-2πikn/24)
+	for k := 0; k < 24; k++ {
+		sum := complex(0, 0)
+		for n := 0; n < 24; n++ {
+			// Twiddle factor: e^(-2πikn/24)
+			angle := -2 * math.Pi * float64(k*n) / 24
+			twiddle := complex(math.Cos(angle), math.Sin(angle))
+			sum += original[n] * twiddle
+		}
+		data[k] = sum
+	}
 }
 
 // radix4_64_fft_go performs a 64-point Radix-4 FFT using real NEON assembly
@@ -630,8 +889,94 @@ func butterfly10_fft_go(data []complex128) {
 		return
 	}
 
-	// Call assembly function
-	butterfly10_fft_asm(unsafe.Pointer(&data[0]))
+	// Use correct scalar implementation for now
+	// TODO: Implement proper NEON assembly
+	// Mixed radix algorithm: 2x5 FFT
+	// Step 1: Transpose input into scratch arrays (even and odd indices)
+	scratch0 := [5]complex128{data[0], data[2], data[4], data[6], data[8]}
+	scratch1 := [5]complex128{data[1], data[3], data[5], data[7], data[9]}
+
+	// Step 2: Column FFTs (5-point FFTs)
+	// For scratch0
+	// Twiddle factors for 5-point FFT
+	twiddle1 := complex(0.30901699437494745, -0.9510565162951535) // e^(-2πi/5)
+	twiddle2 := complex(-0.8090169943749473, -0.5877852522924731) // e^(-4πi/5)
+
+	// Using the formula from RustFFT with symmetry optimizations
+	x14p := scratch0[1] + scratch0[4]
+	x14n := scratch0[1] - scratch0[4]
+	x23p := scratch0[2] + scratch0[3]
+	x23n := scratch0[2] - scratch0[3]
+	sum := scratch0[0] + x14p + x23p
+
+	// Compute real parts
+	b14re_a := real(scratch0[0]) + real(twiddle1)*real(x14p) + real(twiddle2)*real(x23p)
+	b14re_b := imag(twiddle1)*imag(x14n) + imag(twiddle2)*imag(x23n)
+	b23re_a := real(scratch0[0]) + real(twiddle2)*real(x14p) + real(twiddle1)*real(x23p)
+	b23re_b := imag(twiddle2)*imag(x14n) - imag(twiddle1)*imag(x23n)
+
+	// Compute imaginary parts
+	b14im_a := imag(scratch0[0]) + real(twiddle1)*imag(x14p) + real(twiddle2)*imag(x23p)
+	b14im_b := imag(twiddle1)*real(x14n) + imag(twiddle2)*real(x23n)
+	b23im_a := imag(scratch0[0]) + real(twiddle2)*imag(x14p) + real(twiddle1)*imag(x23p)
+	b23im_b := imag(twiddle2)*real(x14n) - imag(twiddle1)*real(x23n)
+
+	// Assemble outputs
+	scratch0[0] = sum
+	scratch0[1] = complex(b14re_a-b14re_b, b14im_a+b14im_b)
+	scratch0[2] = complex(b23re_a-b23re_b, b23im_a+b23im_b)
+	scratch0[3] = complex(b23re_a+b23re_b, b23im_a-b23im_b)
+	scratch0[4] = complex(b14re_a+b14re_b, b14im_a-b14im_b)
+
+	// For scratch1
+	x14p = scratch1[1] + scratch1[4]
+	x14n = scratch1[1] - scratch1[4]
+	x23p = scratch1[2] + scratch1[3]
+	x23n = scratch1[2] - scratch1[3]
+	sum = scratch1[0] + x14p + x23p
+
+	// Compute real parts
+	b14re_a = real(scratch1[0]) + real(twiddle1)*real(x14p) + real(twiddle2)*real(x23p)
+	b14re_b = imag(twiddle1)*imag(x14n) + imag(twiddle2)*imag(x23n)
+	b23re_a = real(scratch1[0]) + real(twiddle2)*real(x14p) + real(twiddle1)*real(x23p)
+	b23re_b = imag(twiddle2)*imag(x14n) - imag(twiddle1)*imag(x23n)
+
+	// Compute imaginary parts
+	b14im_a = imag(scratch1[0]) + real(twiddle1)*imag(x14p) + real(twiddle2)*imag(x23p)
+	b14im_b = imag(twiddle1)*real(x14n) + imag(twiddle2)*real(x23n)
+	b23im_a = imag(scratch1[0]) + real(twiddle2)*imag(x14p) + real(twiddle1)*imag(x23p)
+	b23im_b = imag(twiddle2)*real(x14n) - imag(twiddle1)*real(x23n)
+
+	// Assemble outputs
+	scratch1[0] = sum
+	scratch1[1] = complex(b14re_a-b14re_b, b14im_a+b14im_b)
+	scratch1[2] = complex(b23re_a-b23re_b, b23im_a+b23im_b)
+	scratch1[3] = complex(b23re_a+b23re_b, b23im_a-b23im_b)
+	scratch1[4] = complex(b14re_a+b14re_b, b14im_a-b14im_b)
+
+	// Step 3: Apply twiddle factors
+	// Twiddle factors for 10-point FFT
+	twiddle10 := complex(0.8090169943749475, -0.5877852522924731) // e^(-2πi/10)
+
+	scratch1[1] = scratch1[1] * twiddle10
+	scratch1[2] = scratch1[2] * (twiddle10 * twiddle10)
+	scratch1[3] = scratch1[3] * (twiddle10 * twiddle10 * twiddle10)
+	scratch1[4] = scratch1[4] * (twiddle10 * twiddle10 * twiddle10 * twiddle10)
+
+	// Step 4: Transpose - skipped because we'll do non-contiguous FFTs
+
+	// Step 5: Row FFTs (2-point FFTs between corresponding elements)
+	for i := 0; i < 5; i++ {
+		temp := scratch0[i] + scratch1[i]
+		scratch1[i] = scratch0[i] - scratch1[i]
+		scratch0[i] = temp
+	}
+
+	// Step 6: Copy data to output (no transpose needed since we skipped step 4)
+	for i := 0; i < 5; i++ {
+		data[i] = scratch0[i]
+		data[i+5] = scratch1[i]
+	}
 }
 
 // butterfly15_fft_go performs a 15-point Butterfly FFT using real NEON assembly
@@ -640,8 +985,24 @@ func butterfly15_fft_go(data []complex128) {
 		return
 	}
 
-	// Call assembly function
-	butterfly15_fft_asm(unsafe.Pointer(&data[0]))
+	// Use correct scalar implementation for now
+	// TODO: Implement proper NEON assembly
+	// 15-point FFT using direct DFT (simpler approach)
+	// Store original data
+	original := make([]complex128, 15)
+	copy(original, data)
+
+	// Apply DFT: X[k] = sum(n=0 to 14) x[n] * e^(-2πikn/15)
+	for k := 0; k < 15; k++ {
+		sum := complex(0, 0)
+		for n := 0; n < 15; n++ {
+			// Twiddle factor: e^(-2πikn/15)
+			angle := -2 * math.Pi * float64(k*n) / 15
+			twiddle := complex(math.Cos(angle), math.Sin(angle))
+			sum += original[n] * twiddle
+		}
+		data[k] = sum
+	}
 }
 
 // radixn_10_fft_go performs a 10-point RadixN FFT using real NEON assembly

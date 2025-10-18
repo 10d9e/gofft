@@ -28,12 +28,14 @@ func NewMixedRadix(widthFft, heightFft FftInterface) *MixedRadix {
 	height := heightFft.Len()
 	length := width * height
 
-	// Precompute twiddle factors
+	// Precompute twiddle factors (matching RustFFT compute_twiddle)
 	twiddles := make([]complex128, length)
 	for x := 0; x < width; x++ {
 		for y := 0; y < height; y++ {
 			idx := x*height + y
-			angle := -2.0 * math.Pi * float64(x*y) / float64(length)
+			index := x * y
+			constant := -2.0 * math.Pi / float64(length)
+			angle := constant * float64(index)
 			if direction == Inverse {
 				angle = -angle
 			}
@@ -41,11 +43,12 @@ func NewMixedRadix(widthFft, heightFft FftInterface) *MixedRadix {
 		}
 	}
 
-	// Calculate scratch space requirements
+	// Calculate scratch space requirements (matching RustFFT)
 	heightInplace := heightFft.InplaceScratchLen()
 	widthInplace := widthFft.InplaceScratchLen()
-	widthOutofplace := 0 // We'll use in-place for width FFT
+	widthOutofplace := widthFft.OutOfPlaceScratchLen()
 
+	// For out-of-place FFT, we need max of inner FFT scratch requirements
 	maxInnerInplace := heightInplace
 	if widthInplace > maxInnerInplace {
 		maxInnerInplace = widthInplace
@@ -56,13 +59,13 @@ func NewMixedRadix(widthFft, heightFft FftInterface) *MixedRadix {
 		outofplaceScratch = maxInnerInplace
 	}
 
-	inplaceScratch := length
+	// For in-place FFT, we need our own length plus max of what inner FFTs need
+	heightExtra := 0
 	if heightInplace > length {
-		inplaceScratch = length + (heightInplace - length)
+		heightExtra = heightInplace - length
 	}
-	if widthOutofplace > 0 && widthOutofplace > inplaceScratch-length {
-		inplaceScratch = length + widthOutofplace
-	}
+
+	inplaceScratch := length + maxInt(heightExtra, widthOutofplace)
 
 	return &MixedRadix{
 		twiddles:          twiddles,
@@ -116,9 +119,8 @@ func (m *MixedRadix) ProcessWithScratch(buffer, scratch []complex128) {
 	transpose(m.height, m.width, selfScratch, buffer)
 
 	// STEP 5: Perform width-sized FFTs out-of-place (buffer → selfScratch)
-	// Copy buffer to selfScratch, process there
-	copy(selfScratch, buffer)
-	m.widthFft.ProcessWithScratch(selfScratch, innerScratch)
+	// Use out-of-place FFT to process buffer into selfScratch
+	m.widthFft.ProcessOutOfPlace(buffer, selfScratch, innerScratch)
 
 	// STEP 6: Transpose final result (width x height) → buffer
 	transpose(m.width, m.height, selfScratch, buffer)
@@ -134,13 +136,33 @@ func (m *MixedRadix) ProcessImmutable(input []complex128, output, scratch []comp
 	m.ProcessWithScratch(output, scratch)
 }
 
-// transpose performs a matrix transpose
-// Treats input as a rows x cols matrix and transposes to output
-func transpose(rows, cols int, input, output []complex128) {
-	for r := 0; r < rows; r++ {
-		for c := 0; c < cols; c++ {
-			inputIdx := r*cols + c
-			outputIdx := c*rows + r
+// transpose performs a matrix transpose (matching RustFFT transpose_small)
+// Treats input as a width x height matrix and transposes to output
+func transpose(width, height int, input, output []complex128) {
+	for x := 0; x < width; x++ {
+		for y := 0; y < height; y++ {
+			inputIdx := x + y*width
+			outputIdx := y + x*height
+			output[outputIdx] = input[inputIdx]
+		}
+	}
+}
+
+// maxInt returns the maximum of two integers
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+// transposeRustFFT performs a matrix transpose with RustFFT parameter order
+// transpose(input, output, width, height)
+func transposeRustFFT(input, output []complex128, width, height int) {
+	for x := 0; x < width; x++ {
+		for y := 0; y < height; y++ {
+			inputIdx := x + y*width
+			outputIdx := y + x*height
 			output[outputIdx] = input[inputIdx]
 		}
 	}

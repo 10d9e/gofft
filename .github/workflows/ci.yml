@@ -33,6 +33,6 @@ jobs:
       - name: Build
         run: go build ./...
       - name: Test
-        run: go test -v
+        run: go test ./... -v
       - name: Bench (short sample)
         run: go test -bench=. -benchmem || true

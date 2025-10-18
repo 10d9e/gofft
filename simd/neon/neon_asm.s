@@ -53,53 +53,59 @@ TEXT ·store_complex_f64_asm(SB), NOSPLIT, $0-16
 	RET
 
 // add_complex_f64_asm adds two complex numbers using NEON
-TEXT ·add_complex_f64_asm(SB), NOSPLIT, $0-32
-	MOVD a+0(FP), R0
-	MOVD b+8(FP), R1
-	MOVD result+16(FP), R2
+TEXT ·add_complex_f64_asm(SB), NOSPLIT, $0-48
+	MOVD a_real+0(FP), R0
+	MOVD a_imag+8(FP), R1
+	MOVD b_real+16(FP), R2
+	MOVD b_imag+24(FP), R3
+	MOVD ret+32(FP), R4
 	
 	FMOVD 0(R0), F0
-	FMOVD 8(R0), F1
-	FMOVD 0(R1), F2
-	FMOVD 8(R1), F3
+	FMOVD 0(R1), F1
+	FMOVD 0(R2), F2
+	FMOVD 0(R3), F3
 	
 	FADDD F2, F0
 	FADDD F3, F1
 	
-	FMOVD F0, 0(R2)
-	FMOVD F1, 8(R2)
+	FMOVD F0, 0(R4)
+	FMOVD F1, 8(R4)
 	
 	RET
 
 // sub_complex_f64_asm subtracts two complex numbers using NEON
-TEXT ·sub_complex_f64_asm(SB), NOSPLIT, $0-32
-	MOVD a+0(FP), R0
-	MOVD b+8(FP), R1
-	MOVD result+16(FP), R2
+TEXT ·sub_complex_f64_asm(SB), NOSPLIT, $0-48
+	MOVD a_real+0(FP), R0
+	MOVD a_imag+8(FP), R1
+	MOVD b_real+16(FP), R2
+	MOVD b_imag+24(FP), R3
+	MOVD ret+32(FP), R4
 	
 	FMOVD 0(R0), F0
-	FMOVD 8(R0), F1
-	FMOVD 0(R1), F2
-	FMOVD 8(R1), F3
+	FMOVD 0(R1), F1
+	FMOVD 0(R2), F2
+	FMOVD 0(R3), F3
 	
 	FSUBD F2, F0
 	FSUBD F3, F1
 	
-	FMOVD F0, 0(R2)
-	FMOVD F1, 8(R2)
+	FMOVD F0, 0(R4)
+	FMOVD F1, 8(R4)
 	
 	RET
 
 // mul_complex_f64_asm multiplies two complex numbers using NEON
-TEXT ·mul_complex_f64_asm(SB), NOSPLIT, $0-32
-	MOVD a+0(FP), R0
-	MOVD b+8(FP), R1
-	MOVD result+16(FP), R2
+TEXT ·mul_complex_f64_asm(SB), NOSPLIT, $0-48
+	MOVD a_real+0(FP), R0
+	MOVD a_imag+8(FP), R1
+	MOVD b_real+16(FP), R2
+	MOVD b_imag+24(FP), R3
+	MOVD ret+32(FP), R4
 	
 	FMOVD 0(R0), F0    // a.re
-	FMOVD 8(R0), F1    // a.im
-	FMOVD 0(R1), F2    // b.re
-	FMOVD 8(R1), F3    // b.im
+	FMOVD 0(R1), F1    // a.im
+	FMOVD 0(R2), F2    // b.re
+	FMOVD 0(R3), F3    // b.im
 	
 	// Complex multiplication: (a.re + i*a.im) * (b.re + i*b.im)
 	// = (a.re*b.re - a.im*b.im) + i*(a.re*b.im + a.im*b.re)
@@ -112,22 +118,28 @@ TEXT ·mul_complex_f64_asm(SB), NOSPLIT, $0-32
 	FMULD F1, F2, F7   // a.im * b.re
 	FADDD F7, F6       // imag = a.re*b.im + a.im*b.re
 	
-	FMOVD F4, 0(R2)
-	FMOVD F6, 8(R2)
+	FMOVD F4, 0(R4)
+	FMOVD F6, 8(R4)
 	
 	RET
 
 // transpose_2x2_f64_asm transposes a 2x2 matrix of complex numbers
-TEXT ·transpose_2x2_f64_asm(SB), NOSPLIT, $0-32
-	MOVD a+0(FP), R0
-	MOVD b+8(FP), R1
-	MOVD result+16(FP), R2
+TEXT ·transpose_2x2_f64_asm(SB), NOSPLIT, $0-64
+	MOVD a_real+0(FP), R0
+	MOVD a_imag+8(FP), R1
+	MOVD b_real+16(FP), R2
+	MOVD b_imag+24(FP), R3
+	MOVD ret+32(FP), R4
 	
-	LDP (R0), (R3, R4)
-	LDP (R1), (R5, R6)
+	LDP (R0), (R5, R6)
+	LDP (R1), (R7, R8)
+	LDP (R2), (R9, R10)
+	LDP (R3), (R11, R12)
 	
-	STP (R3, R5), 0(R2)
-	STP (R4, R6), 16(R2)
+	STP (R5, R9), 0(R4)
+	STP (R6, R10), 16(R4)
+	STP (R7, R11), 32(R4)
+	STP (R8, R12), 48(R4)
 	
 	RET
 

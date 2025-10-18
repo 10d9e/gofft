@@ -191,8 +191,12 @@ func TestFullRadix4StepByStep(t *testing.T) {
 	t.Logf("numColumns should be: %d", baseLen)
 	t.Logf("Twiddles available: %d (need %d)", len(fft.twiddles), baseLen*3)
 
-	bf4 := NewButterfly4(Forward)
-	butterfly4Stage(output, fft.twiddles, baseLen, bf4)
+	if len(fft.twiddles) > 0 {
+		bf4 := NewButterfly4(Forward)
+		butterfly4Stage(output, fft.twiddles, baseLen, bf4)
+	} else {
+		t.Logf("No twiddles needed - size 32 uses Butterfly32 directly")
+	}
 
 	t.Logf("First 8: %v", output[:8])
 	t.Logf("Next 8: %v", output[8:16])

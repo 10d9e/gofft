@@ -131,9 +131,10 @@ func NewRadixN(factors []RadixFactor, baseFft FftInterface) *RadixN {
 	}
 }
 
-func (r *RadixN) Len() int               { return r.length }
-func (r *RadixN) Direction() Direction   { return r.direction }
-func (r *RadixN) InplaceScratchLen() int { return r.inplaceScratch }
+func (r *RadixN) Len() int                  { return r.length }
+func (r *RadixN) Direction() Direction      { return r.direction }
+func (r *RadixN) InplaceScratchLen() int    { return r.inplaceScratch }
+func (r *RadixN) OutOfPlaceScratchLen() int { return r.inplaceScratch }
 
 func (r *RadixN) ProcessWithScratch(buffer, scratch []complex128) {
 	// Process each chunk
@@ -142,6 +143,11 @@ func (r *RadixN) ProcessWithScratch(buffer, scratch []complex128) {
 		workScratch := scratch[:r.inplaceScratch]
 		r.processOne(chunk, workScratch)
 	}
+}
+
+func (r *RadixN) ProcessOutOfPlace(input, output, scratch []complex128) {
+	copy(output, input)
+	r.ProcessWithScratch(output, scratch)
 }
 
 func (r *RadixN) processOne(buffer, scratch []complex128) {

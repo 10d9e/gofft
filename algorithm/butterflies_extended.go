@@ -270,11 +270,16 @@ func NewButterfly17(direction Direction) *Butterfly17 {
 	return &Butterfly17{inner: NewDft(17, direction)}
 }
 
-func (b *Butterfly17) Len() int               { return 17 }
-func (b *Butterfly17) Direction() Direction   { return b.inner.Direction() }
-func (b *Butterfly17) InplaceScratchLen() int { return b.inner.InplaceScratchLen() }
+func (b *Butterfly17) Len() int                  { return 17 }
+func (b *Butterfly17) Direction() Direction      { return b.inner.Direction() }
+func (b *Butterfly17) InplaceScratchLen() int    { return b.inner.InplaceScratchLen() }
+func (b *Butterfly17) OutOfPlaceScratchLen() int { return b.inner.OutOfPlaceScratchLen() }
 func (b *Butterfly17) ProcessWithScratch(buffer, scratch []complex128) {
 	b.inner.ProcessWithScratch(buffer, scratch)
+}
+
+func (b *Butterfly17) ProcessOutOfPlace(input, output, scratch []complex128) {
+	b.inner.ProcessOutOfPlace(input, output, scratch)
 }
 
 // Butterfly19 implements a size-19 FFT (prime)
@@ -286,11 +291,16 @@ func NewButterfly19(direction Direction) *Butterfly19 {
 	return &Butterfly19{inner: NewDft(19, direction)}
 }
 
-func (b *Butterfly19) Len() int               { return 19 }
-func (b *Butterfly19) Direction() Direction   { return b.inner.Direction() }
-func (b *Butterfly19) InplaceScratchLen() int { return b.inner.InplaceScratchLen() }
+func (b *Butterfly19) Len() int                  { return 19 }
+func (b *Butterfly19) Direction() Direction      { return b.inner.Direction() }
+func (b *Butterfly19) InplaceScratchLen() int    { return b.inner.InplaceScratchLen() }
+func (b *Butterfly19) OutOfPlaceScratchLen() int { return b.inner.OutOfPlaceScratchLen() }
 func (b *Butterfly19) ProcessWithScratch(buffer, scratch []complex128) {
 	b.inner.ProcessWithScratch(buffer, scratch)
+}
+
+func (b *Butterfly19) ProcessOutOfPlace(input, output, scratch []complex128) {
+	b.inner.ProcessOutOfPlace(input, output, scratch)
 }
 
 // Butterfly23 implements a size-23 FFT (prime)
@@ -302,11 +312,16 @@ func NewButterfly23(direction Direction) *Butterfly23 {
 	return &Butterfly23{inner: NewDft(23, direction)}
 }
 
-func (b *Butterfly23) Len() int               { return 23 }
-func (b *Butterfly23) Direction() Direction   { return b.inner.Direction() }
-func (b *Butterfly23) InplaceScratchLen() int { return b.inner.InplaceScratchLen() }
+func (b *Butterfly23) Len() int                  { return 23 }
+func (b *Butterfly23) Direction() Direction      { return b.inner.Direction() }
+func (b *Butterfly23) InplaceScratchLen() int    { return b.inner.InplaceScratchLen() }
+func (b *Butterfly23) OutOfPlaceScratchLen() int { return b.inner.OutOfPlaceScratchLen() }
 func (b *Butterfly23) ProcessWithScratch(buffer, scratch []complex128) {
 	b.inner.ProcessWithScratch(buffer, scratch)
+}
+
+func (b *Butterfly23) ProcessOutOfPlace(input, output, scratch []complex128) {
+	b.inner.ProcessOutOfPlace(input, output, scratch)
 }
 
 // Butterfly29 implements a size-29 FFT (prime)
@@ -318,11 +333,16 @@ func NewButterfly29(direction Direction) *Butterfly29 {
 	return &Butterfly29{inner: NewDft(29, direction)}
 }
 
-func (b *Butterfly29) Len() int               { return 29 }
-func (b *Butterfly29) Direction() Direction   { return b.inner.Direction() }
-func (b *Butterfly29) InplaceScratchLen() int { return b.inner.InplaceScratchLen() }
+func (b *Butterfly29) Len() int                  { return 29 }
+func (b *Butterfly29) Direction() Direction      { return b.inner.Direction() }
+func (b *Butterfly29) InplaceScratchLen() int    { return b.inner.InplaceScratchLen() }
+func (b *Butterfly29) OutOfPlaceScratchLen() int { return b.inner.OutOfPlaceScratchLen() }
 func (b *Butterfly29) ProcessWithScratch(buffer, scratch []complex128) {
 	b.inner.ProcessWithScratch(buffer, scratch)
+}
+
+func (b *Butterfly29) ProcessOutOfPlace(input, output, scratch []complex128) {
+	b.inner.ProcessOutOfPlace(input, output, scratch)
 }
 
 // Butterfly31 implements a size-31 FFT (prime)
@@ -334,9 +354,14 @@ func NewButterfly31(direction Direction) *Butterfly31 {
 	return &Butterfly31{inner: NewDft(31, direction)}
 }
 
-func (b *Butterfly31) Len() int               { return 31 }
-func (b *Butterfly31) Direction() Direction   { return b.inner.Direction() }
-func (b *Butterfly31) InplaceScratchLen() int { return b.inner.InplaceScratchLen() }
+func (b *Butterfly31) Len() int                  { return 31 }
+func (b *Butterfly31) Direction() Direction      { return b.inner.Direction() }
+func (b *Butterfly31) InplaceScratchLen() int    { return b.inner.InplaceScratchLen() }
+func (b *Butterfly31) OutOfPlaceScratchLen() int { return b.inner.OutOfPlaceScratchLen() }
 func (b *Butterfly31) ProcessWithScratch(buffer, scratch []complex128) {
 	b.inner.ProcessWithScratch(buffer, scratch)
+}
+
+func (b *Butterfly31) ProcessOutOfPlace(input, output, scratch []complex128) {
+	b.inner.ProcessOutOfPlace(input, output, scratch)
 }

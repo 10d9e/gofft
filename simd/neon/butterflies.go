@@ -116,39 +116,73 @@ func Butterfly9_NEON(data []complex128) {
 		return
 	}
 
-	// For now, use optimized scalar implementation
-	// TODO: Replace with actual NEON intrinsics
+	// Use correct scalar implementation for now
+	// TODO: Implement proper NEON assembly
+	// Mixed radix algorithm: 3x3 FFT
+	// Step 1: Transpose input into scratch
+	scratch0 := [3]complex128{data[0], data[3], data[6]}
+	scratch1 := [3]complex128{data[1], data[4], data[7]}
+	scratch2 := [3]complex128{data[2], data[5], data[8]}
 
-	// 9-point butterfly can be decomposed as 3×3
-	// Using 3×3 decomposition
+	// Step 2: Column FFTs (3-point)
+	// For scratch0
+	x0 := scratch0[0] + scratch0[1] + scratch0[2]
+	x1 := scratch0[0] + complex(-0.5, -0.8660254037844386)*scratch0[1] + complex(-0.5, 0.8660254037844386)*scratch0[2]
+	x2 := scratch0[0] + complex(-0.5, 0.8660254037844386)*scratch0[1] + complex(-0.5, -0.8660254037844386)*scratch0[2]
+	scratch0[0], scratch0[1], scratch0[2] = x0, x1, x2
 
-	// First apply 3-point butterflies on rows
-	for i := 0; i < 3; i++ {
-		chunk := data[i*3 : (i+1)*3]
-		Butterfly3_NEON(chunk)
-	}
+	// For scratch1
+	x0 = scratch1[0] + scratch1[1] + scratch1[2]
+	x1 = scratch1[0] + complex(-0.5, -0.8660254037844386)*scratch1[1] + complex(-0.5, 0.8660254037844386)*scratch1[2]
+	x2 = scratch1[0] + complex(-0.5, 0.8660254037844386)*scratch1[1] + complex(-0.5, -0.8660254037844386)*scratch1[2]
+	scratch1[0], scratch1[1], scratch1[2] = x0, x1, x2
 
-	// Then apply 3-point butterflies on columns with twiddles
+	// For scratch2
+	x0 = scratch2[0] + scratch2[1] + scratch2[2]
+	x1 = scratch2[0] + complex(-0.5, -0.8660254037844386)*scratch2[1] + complex(-0.5, 0.8660254037844386)*scratch2[2]
+	x2 = scratch2[0] + complex(-0.5, 0.8660254037844386)*scratch2[1] + complex(-0.5, -0.8660254037844386)*scratch2[2]
+	scratch2[0], scratch2[1], scratch2[2] = x0, x1, x2
+
+	// Step 3: Apply twiddle factors
 	// Twiddle factors for 9-point FFT
-	w1 := complex(math.Cos(-2*math.Pi/9), math.Sin(-2*math.Pi/9))
-	w2 := complex(math.Cos(-4*math.Pi/9), math.Sin(-4*math.Pi/9))
+	twiddle1 := complex(0.766044443118978, -0.6427876096865393)   // e^(-2πi/9)
+	twiddle2 := complex(0.17364817766693033, -0.984807753012208)  // e^(-4πi/9)
+	twiddle4 := complex(-0.9396926207859084, -0.3420201433256687) // e^(-8πi/9)
 
+	scratch1[1] = scratch1[1] * twiddle1
+	scratch1[2] = scratch1[2] * twiddle2
+	scratch2[1] = scratch2[1] * twiddle2
+	scratch2[2] = scratch2[2] * twiddle4
+
+	// Step 4: Transpose - SKIPPED
+
+	// Step 5: Row FFTs (3-point, strided across scratch arrays)
+	// performStrided3 for each row
 	for i := 0; i < 3; i++ {
-		// Extract column elements
-		chunk := []complex128{data[i], data[i+3], data[i+6]}
+		// 3-point FFT on scratch0[i], scratch1[i], scratch2[i]
+		xp := scratch1[i] + scratch2[i]
+		xn := scratch1[i] - scratch2[i]
+		sum := scratch0[i] + xp
 
-		// Apply twiddles
-		chunk[1] *= w1
-		chunk[2] *= w2
+		twiddle := complex(-0.5, -0.8660254037844386) // e^(-2πi/3)
+		tempA := scratch0[i] + complex(real(twiddle)*real(xp), real(twiddle)*imag(xp))
+		tempB := complex(-imag(twiddle)*imag(xn), imag(twiddle)*real(xn))
 
-		// Apply 3-point butterfly
-		Butterfly3_NEON(chunk)
-
-		// Store back
-		data[i] = chunk[0]
-		data[i+3] = chunk[1]
-		data[i+6] = chunk[2]
+		scratch0[i] = sum
+		scratch1[i] = tempA + tempB
+		scratch2[i] = tempA - tempB
 	}
+
+	// Step 6: Copy to output (column-major)
+	data[0] = scratch0[0]
+	data[1] = scratch0[1]
+	data[2] = scratch0[2]
+	data[3] = scratch1[0]
+	data[4] = scratch1[1]
+	data[5] = scratch1[2]
+	data[6] = scratch2[0]
+	data[7] = scratch2[1]
+	data[8] = scratch2[2]
 }
 
 // Butterfly10_NEON performs a 10-point butterfly using NEON intrinsics
@@ -177,32 +211,31 @@ func Butterfly11_NEON(data []complex128) {
 		return
 	}
 
-	// For now, use optimized scalar implementation
-	// TODO: Replace with actual NEON intrinsics
-
-	// 11-point butterfly with twiddle factors
+	// Use correct scalar implementation for now
+	// TODO: Implement proper NEON assembly
+	// 11-point FFT using direct DFT (prime size)
 	// Twiddle factors for 11-point FFT
-	angles := make([]float64, 11)
-	for i := 0; i < 11; i++ {
-		angles[i] = -2 * math.Pi * float64(i) / 11
+	twiddles := make([]complex128, 11)
+	for k := 0; k < 11; k++ {
+		angle := -2 * math.Pi * float64(k) / 11
+		twiddles[k] = complex(math.Cos(angle), math.Sin(angle))
 	}
 
-	// Apply 11-point butterfly algorithm
-	// This is a simplified version - full implementation would use NEON
+	// Store original data
+	original := make([]complex128, 11)
+	copy(original, data)
 
-	// Combine all elements
-	sum := complex(0, 0)
-	for i := range data {
-		sum += data[i]
+	// Apply DFT: X[k] = sum(n=0 to 10) x[n] * e^(-2πikn/11)
+	for k := 0; k < 11; k++ {
+		sum := complex(0, 0)
+		for n := 0; n < 11; n++ {
+			// Twiddle factor: e^(-2πikn/11)
+			angle := -2 * math.Pi * float64(k*n) / 11
+			twiddle := complex(math.Cos(angle), math.Sin(angle))
+			sum += original[n] * twiddle
+		}
+		data[k] = sum
 	}
-
-	// Apply twiddle factors and combine
-	for i := 1; i < 11; i++ {
-		w := complex(math.Cos(angles[i]), math.Sin(angles[i]))
-		data[i] *= w
-	}
-
-	data[0] = sum
 }
 
 // Butterfly12_NEON performs a 12-point butterfly using NEON intrinsics
@@ -221,32 +254,24 @@ func Butterfly13_NEON(data []complex128) {
 		return
 	}
 
-	// For now, use optimized scalar implementation
-	// TODO: Replace with actual NEON intrinsics
+	// Use correct scalar implementation for now
+	// TODO: Implement proper NEON assembly
+	// 13-point FFT using direct DFT (prime size)
+	// Store original data
+	original := make([]complex128, 13)
+	copy(original, data)
 
-	// 13-point butterfly with twiddle factors
-	// Twiddle factors for 13-point FFT
-	angles := make([]float64, 13)
-	for i := 0; i < 13; i++ {
-		angles[i] = -2 * math.Pi * float64(i) / 13
+	// Apply DFT: X[k] = sum(n=0 to 12) x[n] * e^(-2πikn/13)
+	for k := 0; k < 13; k++ {
+		sum := complex(0, 0)
+		for n := 0; n < 13; n++ {
+			// Twiddle factor: e^(-2πikn/13)
+			angle := -2 * math.Pi * float64(k*n) / 13
+			twiddle := complex(math.Cos(angle), math.Sin(angle))
+			sum += original[n] * twiddle
+		}
+		data[k] = sum
 	}
-
-	// Apply 13-point butterfly algorithm
-	// This is a simplified version - full implementation would use NEON
-
-	// Combine all elements
-	sum := complex(0, 0)
-	for i := range data {
-		sum += data[i]
-	}
-
-	// Apply twiddle factors and combine
-	for i := 1; i < 13; i++ {
-		w := complex(math.Cos(angles[i]), math.Sin(angles[i]))
-		data[i] *= w
-	}
-
-	data[0] = sum
 }
 
 // Butterfly17_NEON performs a 17-point butterfly using NEON intrinsics
@@ -255,32 +280,24 @@ func Butterfly17_NEON(data []complex128) {
 		return
 	}
 
-	// For now, use optimized scalar implementation
-	// TODO: Replace with actual NEON intrinsics
+	// Use correct scalar implementation for now
+	// TODO: Implement proper NEON assembly
+	// 17-point FFT using direct DFT (prime size)
+	// Store original data
+	original := make([]complex128, 17)
+	copy(original, data)
 
-	// 17-point butterfly with twiddle factors
-	// Twiddle factors for 17-point FFT
-	angles := make([]float64, 17)
-	for i := 0; i < 17; i++ {
-		angles[i] = -2 * math.Pi * float64(i) / 17
+	// Apply DFT: X[k] = sum(n=0 to 16) x[n] * e^(-2πikn/17)
+	for k := 0; k < 17; k++ {
+		sum := complex(0, 0)
+		for n := 0; n < 17; n++ {
+			// Twiddle factor: e^(-2πikn/17)
+			angle := -2 * math.Pi * float64(k*n) / 17
+			twiddle := complex(math.Cos(angle), math.Sin(angle))
+			sum += original[n] * twiddle
+		}
+		data[k] = sum
 	}
-
-	// Apply 17-point butterfly algorithm
-	// This is a simplified version - full implementation would use NEON
-
-	// Combine all elements
-	sum := complex(0, 0)
-	for i := range data {
-		sum += data[i]
-	}
-
-	// Apply twiddle factors and combine
-	for i := 1; i < 17; i++ {
-		w := complex(math.Cos(angles[i]), math.Sin(angles[i]))
-		data[i] *= w
-	}
-
-	data[0] = sum
 }
 
 // Butterfly19_NEON performs a 19-point butterfly using NEON intrinsics
@@ -289,32 +306,24 @@ func Butterfly19_NEON(data []complex128) {
 		return
 	}
 
-	// For now, use optimized scalar implementation
-	// TODO: Replace with actual NEON intrinsics
+	// Use correct scalar implementation for now
+	// TODO: Implement proper NEON assembly
+	// 19-point FFT using direct DFT (prime size)
+	// Store original data
+	original := make([]complex128, 19)
+	copy(original, data)
 
-	// 19-point butterfly with twiddle factors
-	// Twiddle factors for 19-point FFT
-	angles := make([]float64, 19)
-	for i := 0; i < 19; i++ {
-		angles[i] = -2 * math.Pi * float64(i) / 19
+	// Apply DFT: X[k] = sum(n=0 to 18) x[n] * e^(-2πikn/19)
+	for k := 0; k < 19; k++ {
+		sum := complex(0, 0)
+		for n := 0; n < 19; n++ {
+			// Twiddle factor: e^(-2πikn/19)
+			angle := -2 * math.Pi * float64(k*n) / 19
+			twiddle := complex(math.Cos(angle), math.Sin(angle))
+			sum += original[n] * twiddle
+		}
+		data[k] = sum
 	}
-
-	// Apply 19-point butterfly algorithm
-	// This is a simplified version - full implementation would use NEON
-
-	// Combine all elements
-	sum := complex(0, 0)
-	for i := range data {
-		sum += data[i]
-	}
-
-	// Apply twiddle factors and combine
-	for i := 1; i < 19; i++ {
-		w := complex(math.Cos(angles[i]), math.Sin(angles[i]))
-		data[i] *= w
-	}
-
-	data[0] = sum
 }
 
 // Butterfly23_NEON performs a 23-point butterfly using NEON intrinsics
@@ -323,32 +332,24 @@ func Butterfly23_NEON(data []complex128) {
 		return
 	}
 
-	// For now, use optimized scalar implementation
-	// TODO: Replace with actual NEON intrinsics
+	// Use correct scalar implementation for now
+	// TODO: Implement proper NEON assembly
+	// 23-point FFT using direct DFT (prime size)
+	// Store original data
+	original := make([]complex128, 23)
+	copy(original, data)
 
-	// 23-point butterfly with twiddle factors
-	// Twiddle factors for 23-point FFT
-	angles := make([]float64, 23)
-	for i := 0; i < 23; i++ {
-		angles[i] = -2 * math.Pi * float64(i) / 23
+	// Apply DFT: X[k] = sum(n=0 to 22) x[n] * e^(-2πikn/23)
+	for k := 0; k < 23; k++ {
+		sum := complex(0, 0)
+		for n := 0; n < 23; n++ {
+			// Twiddle factor: e^(-2πikn/23)
+			angle := -2 * math.Pi * float64(k*n) / 23
+			twiddle := complex(math.Cos(angle), math.Sin(angle))
+			sum += original[n] * twiddle
+		}
+		data[k] = sum
 	}
-
-	// Apply 23-point butterfly algorithm
-	// This is a simplified version - full implementation would use NEON
-
-	// Combine all elements
-	sum := complex(0, 0)
-	for i := range data {
-		sum += data[i]
-	}
-
-	// Apply twiddle factors and combine
-	for i := 1; i < 23; i++ {
-		w := complex(math.Cos(angles[i]), math.Sin(angles[i]))
-		data[i] *= w
-	}
-
-	data[0] = sum
 }
 
 // Butterfly24_NEON performs a 24-point butterfly using NEON intrinsics
@@ -367,50 +368,23 @@ func Butterfly27_NEON(data []complex128) {
 		return
 	}
 
-	// For now, use optimized scalar implementation
-	// TODO: Replace with actual NEON intrinsics
+	// Use correct scalar implementation for now
+	// TODO: Implement proper NEON assembly
+	// 27-point FFT using direct DFT (simpler approach)
+	// Store original data
+	original := make([]complex128, 27)
+	copy(original, data)
 
-	// 27-point butterfly can be decomposed as 3×9 or 9×3
-	// Using 3×9 decomposition
-
-	// First apply 3-point butterflies
-	for i := 0; i < 9; i++ {
-		chunk := data[i*3 : (i+1)*3]
-		Butterfly3_NEON(chunk)
-	}
-
-	// Then apply 9-point butterflies with twiddles
-	// Twiddle factors for 27-point FFT
-	w1 := complex(math.Cos(-2*math.Pi/27), math.Sin(-2*math.Pi/27))
-	w2 := complex(math.Cos(-4*math.Pi/27), math.Sin(-4*math.Pi/27))
-	w3 := complex(math.Cos(-6*math.Pi/27), math.Sin(-6*math.Pi/27))
-	w4 := complex(math.Cos(-8*math.Pi/27), math.Sin(-8*math.Pi/27))
-	w5 := complex(math.Cos(-10*math.Pi/27), math.Sin(-10*math.Pi/27))
-	w6 := complex(math.Cos(-12*math.Pi/27), math.Sin(-12*math.Pi/27))
-	w7 := complex(math.Cos(-14*math.Pi/27), math.Sin(-14*math.Pi/27))
-	w8 := complex(math.Cos(-16*math.Pi/27), math.Sin(-16*math.Pi/27))
-
-	for i := 0; i < 3; i++ {
-		// Extract column elements (strided by 3)
-		chunk := []complex128{data[i], data[i+3], data[i+6], data[i+9], data[i+12], data[i+15], data[i+18], data[i+21], data[i+24]}
-
-		// Apply twiddles
-		chunk[1] *= w1
-		chunk[2] *= w2
-		chunk[3] *= w3
-		chunk[4] *= w4
-		chunk[5] *= w5
-		chunk[6] *= w6
-		chunk[7] *= w7
-		chunk[8] *= w8
-
-		// Apply 9-point butterfly
-		Butterfly9_NEON(chunk)
-
-		// Store back
-		for j := 0; j < 9; j++ {
-			data[i+j*3] = chunk[j]
+	// Apply DFT: X[k] = sum(n=0 to 26) x[n] * e^(-2πikn/27)
+	for k := 0; k < 27; k++ {
+		sum := complex(0, 0)
+		for n := 0; n < 27; n++ {
+			// Twiddle factor: e^(-2πikn/27)
+			angle := -2 * math.Pi * float64(k*n) / 27
+			twiddle := complex(math.Cos(angle), math.Sin(angle))
+			sum += original[n] * twiddle
 		}
+		data[k] = sum
 	}
 }
 
@@ -420,32 +394,24 @@ func Butterfly29_NEON(data []complex128) {
 		return
 	}
 
-	// For now, use optimized scalar implementation
-	// TODO: Replace with actual NEON intrinsics
+	// Use correct scalar implementation for now
+	// TODO: Implement proper NEON assembly
+	// 29-point FFT using direct DFT (prime size)
+	// Store original data
+	original := make([]complex128, 29)
+	copy(original, data)
 
-	// 29-point butterfly with twiddle factors
-	// Twiddle factors for 29-point FFT
-	angles := make([]float64, 29)
-	for i := 0; i < 29; i++ {
-		angles[i] = -2 * math.Pi * float64(i) / 29
+	// Apply DFT: X[k] = sum(n=0 to 28) x[n] * e^(-2πikn/29)
+	for k := 0; k < 29; k++ {
+		sum := complex(0, 0)
+		for n := 0; n < 29; n++ {
+			// Twiddle factor: e^(-2πikn/29)
+			angle := -2 * math.Pi * float64(k*n) / 29
+			twiddle := complex(math.Cos(angle), math.Sin(angle))
+			sum += original[n] * twiddle
+		}
+		data[k] = sum
 	}
-
-	// Apply 29-point butterfly algorithm
-	// This is a simplified version - full implementation would use NEON
-
-	// Combine all elements
-	sum := complex(0, 0)
-	for i := range data {
-		sum += data[i]
-	}
-
-	// Apply twiddle factors and combine
-	for i := 1; i < 29; i++ {
-		w := complex(math.Cos(angles[i]), math.Sin(angles[i]))
-		data[i] *= w
-	}
-
-	data[0] = sum
 }
 
 // Butterfly31_NEON performs a 31-point butterfly using NEON intrinsics
@@ -454,32 +420,24 @@ func Butterfly31_NEON(data []complex128) {
 		return
 	}
 
-	// For now, use optimized scalar implementation
-	// TODO: Replace with actual NEON intrinsics
+	// Use correct scalar implementation for now
+	// TODO: Implement proper NEON assembly
+	// 31-point FFT using direct DFT (prime size)
+	// Store original data
+	original := make([]complex128, 31)
+	copy(original, data)
 
-	// 31-point butterfly with twiddle factors
-	// Twiddle factors for 31-point FFT
-	angles := make([]float64, 31)
-	for i := 0; i < 31; i++ {
-		angles[i] = -2 * math.Pi * float64(i) / 31
+	// Apply DFT: X[k] = sum(n=0 to 30) x[n] * e^(-2πikn/31)
+	for k := 0; k < 31; k++ {
+		sum := complex(0, 0)
+		for n := 0; n < 31; n++ {
+			// Twiddle factor: e^(-2πikn/31)
+			angle := -2 * math.Pi * float64(k*n) / 31
+			twiddle := complex(math.Cos(angle), math.Sin(angle))
+			sum += original[n] * twiddle
+		}
+		data[k] = sum
 	}
-
-	// Apply 31-point butterfly algorithm
-	// This is a simplified version - full implementation would use NEON
-
-	// Combine all elements
-	sum := complex(0, 0)
-	for i := range data {
-		sum += data[i]
-	}
-
-	// Apply twiddle factors and combine
-	for i := 1; i < 31; i++ {
-		w := complex(math.Cos(angles[i]), math.Sin(angles[i]))
-		data[i] *= w
-	}
-
-	data[0] = sum
 }
 
 // ProcessVectorizedButterfly processes data using NEON-optimized butterflies

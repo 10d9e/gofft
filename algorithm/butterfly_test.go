@@ -88,9 +88,9 @@ func TestButterfly4InButterfly4Stage(t *testing.T) {
 	t.Logf("  Col 1: %v %v %v %v", data[1], data[3], data[5], data[7])
 
 	// Manually compute what we expect
-	// For column 0: input is [0, 2, 4, 6]
+	// For column 0: input is [0, 4, 1, 5] (data[0], data[2], data[4], data[6])
 	// After 4-point FFT with twiddles all 1: should be sum, diff of evens/odds, etc
-	col0Input := []complex128{complex(0, 0), complex(2, 0), complex(4, 0), complex(6, 0)}
+	col0Input := []complex128{complex(0, 0), complex(4, 0), complex(1, 0), complex(5, 0)}
 	dft := NewDft(4, Forward)
 	expected := make([]complex128, 4)
 	copy(expected, col0Input)

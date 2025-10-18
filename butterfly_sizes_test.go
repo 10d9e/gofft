@@ -8,7 +8,7 @@ import (
 
 // TestAllButterflySizes tests all implemented butterfly sizes
 func TestAllButterflySizes(t *testing.T) {
-	sizes := []int{2, 3, 4, 5, 6, 7, 8, 9, 12, 16, 32}
+	sizes := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 19, 23, 24, 27, 29, 31, 32}
 
 	planner := NewPlanner()
 
@@ -55,7 +55,7 @@ func TestAllButterflySizes(t *testing.T) {
 
 // TestButterflySizesRoundTrip tests forward + inverse for all butterfly sizes
 func TestButterflySizesRoundTrip(t *testing.T) {
-	sizes := []int{2, 3, 4, 5, 6, 7, 8, 9, 12, 16, 32}
+	sizes := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 19, 23, 24, 27, 29, 31, 32}
 
 	planner := NewPlanner()
 
