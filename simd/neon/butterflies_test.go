@@ -7,6 +7,8 @@ import (
 	"math"
 	"testing"
 	"unsafe"
+
+	"github.com/10d9e/gofft/algorithm"
 )
 
 func TestNEONButterflies(t *testing.T) {
@@ -48,7 +50,7 @@ func TestNEONButterflies(t *testing.T) {
 			}
 
 			// Apply NEON butterfly
-			ProcessVectorizedButterfly(data, tc.size)
+			ProcessVectorizedButterfly(data, tc.size, algorithm.Forward)
 
 			// Verify we got some result (not all zeros)
 			// Special case for Butterfly1: it's the identity operation, so it should preserve input
@@ -81,7 +83,7 @@ func TestButterfly2_NEON(t *testing.T) {
 		complex(3.0, 4.0),
 	}
 
-	Butterfly2_NEON(data)
+	Butterfly2_NEON(data, algorithm.Forward)
 
 	// Expected: out[0] = (1+2i) + (3+4i) = 4+6i
 	//           out[1] = (1+2i) - (3+4i) = -2-2i
@@ -109,7 +111,7 @@ func TestButterfly4_NEON(t *testing.T) {
 	original := make([]complex128, len(data))
 	copy(original, data)
 
-	Butterfly4_NEON(data)
+	Butterfly4_NEON(data, algorithm.Forward)
 
 	// Verify we got a result (not all zeros)
 	hasNonZero := false
@@ -150,7 +152,7 @@ func TestButterfly8_NEON(t *testing.T) {
 	original := make([]complex128, len(data))
 	copy(original, data)
 
-	Butterfly8_NEON(data)
+	Butterfly8_NEON(data, algorithm.Forward)
 
 	// Verify we got a result
 	hasNonZero := false
@@ -175,7 +177,7 @@ func TestButterfly16_NEON(t *testing.T) {
 		data[i] = complex(float64(i%4), float64(i%3)*0.3)
 	}
 
-	Butterfly16_NEON(data)
+	Butterfly16_NEON(data, algorithm.Forward)
 
 	// Verify we got a result
 	hasNonZero := false
@@ -200,7 +202,7 @@ func TestButterfly32_NEON(t *testing.T) {
 		data[i] = complex(float64(i%8), float64(i%7)*0.2)
 	}
 
-	Butterfly32_NEON(data)
+	Butterfly32_NEON(data, algorithm.Forward)
 
 	// Verify we got a result
 	hasNonZero := false
@@ -228,7 +230,7 @@ func TestProcessVectorizedButterfly(t *testing.T) {
 				data[i] = complex(float64(i%5), float64(i%3)*0.4)
 			}
 
-			ProcessVectorizedButterfly(data, size)
+			ProcessVectorizedButterfly(data, size, algorithm.Forward)
 
 			// Verify we got a result
 			hasNonZero := false
@@ -297,7 +299,7 @@ func BenchmarkNEONButterflies(b *testing.B) {
 
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				ProcessVectorizedButterfly(data, size)
+				ProcessVectorizedButterfly(data, size, algorithm.Forward)
 			}
 		})
 	}
@@ -310,7 +312,7 @@ func BenchmarkButterfly2_NEON(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Butterfly2_NEON(data)
+		Butterfly2_NEON(data, algorithm.Forward)
 	}
 }
 
@@ -322,7 +324,7 @@ func BenchmarkButterfly4_NEON(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Butterfly4_NEON(data)
+		Butterfly4_NEON(data, algorithm.Forward)
 	}
 }
 
@@ -334,7 +336,7 @@ func BenchmarkButterfly8_NEON(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Butterfly8_NEON(data)
+		Butterfly8_NEON(data, algorithm.Forward)
 	}
 }
 

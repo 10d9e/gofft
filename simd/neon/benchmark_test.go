@@ -24,7 +24,7 @@ func BenchmarkNEONvsScalar(b *testing.B) {
 			b.Run("NEON", func(b *testing.B) {
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
-					ProcessVectorizedButterfly(data, size)
+					ProcessVectorizedButterfly(data, size, algorithm.Forward)
 				}
 			})
 
@@ -51,14 +51,14 @@ func BenchmarkButterflyComparison(b *testing.B) {
 		name     string
 		neonFunc func([]complex128)
 	}{
-		{1, "Butterfly1", Butterfly1_NEON},
-		{2, "Butterfly2", Butterfly2_NEON},
-		{4, "Butterfly4", Butterfly4_NEON},
-		{8, "Butterfly8", Butterfly8_NEON},
-		{10, "Butterfly10", Butterfly10_NEON},
-		{15, "Butterfly15", Butterfly15_NEON},
-		{16, "Butterfly16", Butterfly16_NEON},
-		{32, "Butterfly32", Butterfly32_NEON},
+		{1, "Butterfly1", func(data []complex128) { Butterfly1_NEON(data, algorithm.Forward) }},
+		{2, "Butterfly2", func(data []complex128) { Butterfly2_NEON(data, algorithm.Forward) }},
+		{4, "Butterfly4", func(data []complex128) { Butterfly4_NEON(data, algorithm.Forward) }},
+		{8, "Butterfly8", func(data []complex128) { Butterfly8_NEON(data, algorithm.Forward) }},
+		{10, "Butterfly10", func(data []complex128) { Butterfly10_NEON(data, algorithm.Forward) }},
+		{15, "Butterfly15", func(data []complex128) { Butterfly15_NEON(data, algorithm.Forward) }},
+		{16, "Butterfly16", func(data []complex128) { Butterfly16_NEON(data, algorithm.Forward) }},
+		{32, "Butterfly32", func(data []complex128) { Butterfly32_NEON(data, algorithm.Forward) }},
 	}
 
 	for _, tc := range testCases {
@@ -116,7 +116,7 @@ func BenchmarkSIMDPlanner(b *testing.B) {
 					copy(testData, data)
 					// Simulate SIMD processing
 					if size <= 32 {
-						ProcessVectorizedButterfly(testData, size)
+						ProcessVectorizedButterfly(testData, size, algorithm.Forward)
 					}
 				}
 			})
@@ -159,7 +159,7 @@ func BenchmarkMemoryAlignment(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			testData := make([]complex128, size)
 			copy(testData, alignedData)
-			Butterfly16_NEON(testData)
+			Butterfly16_NEON(testData, algorithm.Forward)
 		}
 	})
 
@@ -168,7 +168,7 @@ func BenchmarkMemoryAlignment(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			testData := make([]complex128, size)
 			copy(testData, unalignedSlice)
-			Butterfly16_NEON(testData)
+			Butterfly16_NEON(testData, algorithm.Forward)
 		}
 	})
 }
@@ -238,7 +238,7 @@ func BenchmarkThroughput(b *testing.B) {
 				for j := 0; j < totalSize; j += size {
 					chunk := data[j : j+size]
 					if size <= 32 {
-						ProcessVectorizedButterfly(chunk, size)
+						ProcessVectorizedButterfly(chunk, size, algorithm.Forward)
 					}
 				}
 			}

@@ -5,6 +5,8 @@ package neon
 import (
 	"math"
 	"unsafe"
+
+	"github.com/10d9e/gofft/algorithm"
 )
 
 // NEON Radix-4 FFT implementation for ARM64
@@ -62,9 +64,15 @@ func (r *Radix4_NEON) Process(data []complex128) {
 
 // processScalar is the scalar implementation (placeholder for NEON)
 func (r *Radix4_NEON) processScalar(data []complex128) {
+	// Convert direction to algorithm.Direction
+	algoDir := algorithm.Forward
+	if r.direction == -1 {
+		algoDir = algorithm.Inverse
+	}
+
 	if r.length == 4 {
 		// Base case: 4-point FFT
-		Butterfly4_NEON(data[:4])
+		Butterfly4_NEON(data[:4], algoDir)
 		return
 	}
 
@@ -84,6 +92,12 @@ func (r *Radix4_NEON) processScalar(data []complex128) {
 
 // applyTwiddlesAndCombine applies twiddle factors and combines the results
 func (r *Radix4_NEON) applyTwiddlesAndCombine(data []complex128, quarterLen int) {
+	// Convert direction to algorithm.Direction
+	algoDir := algorithm.Forward
+	if r.direction == -1 {
+		algoDir = algorithm.Inverse
+	}
+
 	// Apply twiddle factors to quarters 1, 2, 3
 	for i := 1; i < 4; i++ {
 		start := i * quarterLen
@@ -105,7 +119,7 @@ func (r *Radix4_NEON) applyTwiddlesAndCombine(data []complex128, quarterLen int)
 
 		// Apply 4-point butterfly
 		butterfly4 := []complex128{quarter0, quarter1, quarter2, quarter3}
-		Butterfly4_NEON(butterfly4)
+		Butterfly4_NEON(butterfly4, algoDir)
 
 		// Store back
 		data[i] = butterfly4[0]
@@ -116,68 +130,140 @@ func (r *Radix4_NEON) applyTwiddlesAndCombine(data []complex128, quarterLen int)
 }
 
 // Radix4_64_NEON performs a 64-point Radix-4 FFT using NEON
-func Radix4_64_NEON(data []complex128) {
+func Radix4_64_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 64 {
 		return
 	}
 
-	// Use real NEON assembly
-	radix4_64_fft_go(data)
+	// Use real NEON assembly with direction support
+	radix4_64_fft_go(data, direction)
 }
 
 // Radix4_128_NEON performs a 128-point Radix-4 FFT using NEON
-func Radix4_128_NEON(data []complex128) {
+func Radix4_128_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 128 {
 		return
 	}
 
 	// Use real NEON assembly
-	radix4_128_fft_go(data)
+	radix4_128_fft_go(data, direction)
 }
 
 // Radix4_256_NEON performs a 256-point Radix-4 FFT using NEON
-func Radix4_256_NEON(data []complex128) {
+func Radix4_256_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 256 {
 		return
 	}
 
 	// Use real NEON assembly
-	radix4_256_fft_go(data)
+	radix4_256_fft_go(data, direction)
 }
 
 // Radix4_512_NEON performs a 512-point Radix-4 FFT using NEON
-func Radix4_512_NEON(data []complex128) {
+func Radix4_512_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 512 {
 		return
 	}
 
 	// Use real NEON assembly
-	radix4_512_fft_go(data)
+	radix4_512_fft_go(data, direction)
 }
 
 // Radix4_1024_NEON performs a 1024-point Radix-4 FFT using NEON
-func Radix4_1024_NEON(data []complex128) {
+func Radix4_1024_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 1024 {
 		return
 	}
 
 	// Use real NEON assembly
-	radix4_1024_fft_go(data)
+	radix4_1024_fft_go(data, direction)
+}
+
+// Radix4_2048_NEON performs a 2048-point Radix-4 FFT using NEON
+func Radix4_2048_NEON(data []complex128, direction algorithm.Direction) {
+	if len(data) < 2048 {
+		return
+	}
+
+	// Use real NEON assembly
+	radix4_2048_fft_go(data, direction)
+}
+
+// Radix4_4096_NEON performs a 4096-point Radix-4 FFT using NEON
+func Radix4_4096_NEON(data []complex128, direction algorithm.Direction) {
+	if len(data) < 4096 {
+		return
+	}
+
+	// Use real NEON assembly
+	radix4_4096_fft_go(data, direction)
+}
+
+// Radix4_8192_NEON performs an 8192-point Radix-4 FFT using NEON
+func Radix4_8192_NEON(data []complex128, direction algorithm.Direction) {
+	if len(data) < 8192 {
+		return
+	}
+
+	// Use real NEON assembly
+	radix4_8192_fft_go(data, direction)
+}
+
+// Radix4_16384_NEON performs a 16384-point Radix-4 FFT using NEON
+func Radix4_16384_NEON(data []complex128, direction algorithm.Direction) {
+	if len(data) < 16384 {
+		return
+	}
+
+	// Use real NEON assembly
+	radix4_16384_fft_go(data, direction)
+}
+
+// Radix4_32768_NEON performs a 32768-point Radix-4 FFT using NEON
+func Radix4_32768_NEON(data []complex128, direction algorithm.Direction) {
+	if len(data) < 32768 {
+		return
+	}
+
+	// Use real NEON assembly
+	radix4_32768_fft_go(data, direction)
+}
+
+// Radix4_65536_NEON performs a 65536-point Radix-4 FFT using NEON
+func Radix4_65536_NEON(data []complex128, direction algorithm.Direction) {
+	if len(data) < 65536 {
+		return
+	}
+
+	// Use real NEON assembly
+	radix4_65536_fft_go(data, direction)
 }
 
 // ProcessVectorizedRadix4 processes data using NEON-optimized Radix-4 FFTs
-func ProcessVectorizedRadix4(data []complex128, size int) {
+func ProcessVectorizedRadix4(data []complex128, size int, direction algorithm.Direction) {
 	switch size {
 	case 64:
-		Radix4_64_NEON(data)
+		Radix4_64_NEON(data, direction)
 	case 128:
-		Radix4_128_NEON(data)
+		Radix4_128_NEON(data, direction)
 	case 256:
-		Radix4_256_NEON(data)
+		Radix4_256_NEON(data, direction)
 	case 512:
-		Radix4_512_NEON(data)
+		Radix4_512_NEON(data, direction)
 	case 1024:
-		Radix4_1024_NEON(data)
+		Radix4_1024_NEON(data, direction)
+	case 2048:
+		Radix4_2048_NEON(data, direction)
+	case 4096:
+		Radix4_4096_NEON(data, direction)
+	case 8192:
+		Radix4_8192_NEON(data, direction)
+	case 16384:
+		Radix4_16384_NEON(data, direction)
+	case 32768:
+		Radix4_32768_NEON(data, direction)
+	case 65536:
+		Radix4_65536_NEON(data, direction)
 	default:
 		// Fall back to scalar implementation for unsupported sizes
 		processScalarRadix4(data, size)

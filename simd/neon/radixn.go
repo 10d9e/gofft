@@ -5,6 +5,8 @@ package neon
 import (
 	"math"
 	"unsafe"
+
+	"github.com/10d9e/gofft/algorithm"
 )
 
 // NEON RadixN FFT implementation for ARM64
@@ -189,19 +191,25 @@ func (r *RadixN_NEON) performCrossFFTs(data []complex128) {
 
 // applyButterfly applies a butterfly operation for the given radix
 func (r *RadixN_NEON) applyButterfly(data []complex128, radix int) {
+	// Convert direction to algorithm.Direction
+	algoDir := algorithm.Forward
+	if r.direction == -1 {
+		algoDir = algorithm.Inverse
+	}
+
 	switch radix {
 	case 2:
-		Butterfly2_NEON(data)
+		Butterfly2_NEON(data, algoDir)
 	case 3:
-		Butterfly3_NEON(data)
+		Butterfly3_NEON(data, algoDir)
 	case 4:
-		Butterfly4_NEON(data)
+		Butterfly4_NEON(data, algoDir)
 	case 5:
-		Butterfly5_NEON(data)
+		Butterfly5_NEON(data, algoDir)
 	case 6:
-		Butterfly6_NEON(data)
+		Butterfly6_NEON(data, algoDir)
 	case 7:
-		Butterfly7_NEON(data)
+		Butterfly7_NEON(data, algoDir)
 	default:
 		// Fallback to general butterfly
 		r.performGeneralButterfly(data, radix)

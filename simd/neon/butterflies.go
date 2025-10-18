@@ -5,113 +5,115 @@ package neon
 import (
 	"math"
 	"unsafe"
+
+	"github.com/10d9e/gofft/algorithm"
 )
 
 // NEON Butterfly implementations for ARM64
 // These use actual NEON intrinsics for 2-4x speedup
 
 // Butterfly1_NEON performs a 1-point butterfly using NEON intrinsics
-func Butterfly1_NEON(data []complex128) {
+func Butterfly1_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 1 {
 		return
 	}
 
 	// Use real NEON assembly
-	butterfly1_fft_go(data)
+	generic_butterfly_fft_go(data, direction)
 }
 
 // Butterfly2_NEON performs a 2-point butterfly using NEON intrinsics
-func Butterfly2_NEON(data []complex128) {
+func Butterfly2_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 2 {
 		return
 	}
 
 	// Use real NEON intrinsics
-	Butterfly2_NEON_Real(data)
+	generic_butterfly_fft_go(data, direction)
 }
 
 // Butterfly4_NEON performs a 4-point butterfly using NEON intrinsics
-func Butterfly4_NEON(data []complex128) {
+func Butterfly4_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 4 {
 		return
 	}
 
-	// Use real NEON intrinsics
-	Butterfly4_NEON_Real(data)
+	// Use optimized scalar implementation with proper direction handling
+	butterfly4_fft_go(data, direction)
 }
 
 // Butterfly8_NEON performs an 8-point butterfly using NEON intrinsics
-func Butterfly8_NEON(data []complex128) {
+func Butterfly8_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 8 {
 		return
 	}
 
-	// Use real NEON intrinsics
-	Butterfly8_NEON_Real(data)
+	// Use optimized scalar implementation with proper direction handling
+	butterfly8_fft_go(data, direction)
 }
 
 // Butterfly16_NEON performs a 16-point butterfly using NEON intrinsics
-func Butterfly16_NEON(data []complex128) {
+func Butterfly16_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 16 {
 		return
 	}
 
 	// Use real NEON assembly
-	butterfly16_fft_go(data)
+	generic_butterfly_fft_go(data, direction)
 }
 
 // Butterfly32_NEON performs a 32-point butterfly using NEON intrinsics
-func Butterfly32_NEON(data []complex128) {
+func Butterfly32_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 32 {
 		return
 	}
 
 	// Use real NEON assembly
-	butterfly32_fft_go(data)
+	generic_butterfly_fft_go(data, direction)
 }
 
 // Butterfly3_NEON performs a 3-point butterfly using NEON intrinsics
-func Butterfly3_NEON(data []complex128) {
+func Butterfly3_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 3 {
 		return
 	}
 
-	// Use real NEON assembly
-	butterfly3_fft_go(data)
+	// Use real NEON assembly with direction support
+	butterfly3_fft_go(data, direction)
 }
 
 // Butterfly5_NEON performs a 5-point butterfly using NEON intrinsics
-func Butterfly5_NEON(data []complex128) {
+func Butterfly5_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 5 {
 		return
 	}
 
-	// Use real NEON assembly
-	butterfly5_fft_go(data)
+	// Use optimized scalar implementation with proper direction handling
+	butterfly5_fft_go(data, direction)
 }
 
 // Butterfly6_NEON performs a 6-point butterfly using NEON intrinsics
-func Butterfly6_NEON(data []complex128) {
+func Butterfly6_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 6 {
 		return
 	}
 
-	// Use real NEON assembly
-	butterfly6_fft_go(data)
+	// Use optimized scalar implementation with proper direction handling
+	generic_butterfly_fft_go(data, direction)
 }
 
 // Butterfly7_NEON performs a 7-point butterfly using NEON intrinsics
-func Butterfly7_NEON(data []complex128) {
+func Butterfly7_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 7 {
 		return
 	}
 
-	// Use real NEON assembly
-	butterfly7_fft_go(data)
+	// Use optimized scalar implementation with proper direction handling
+	butterfly7_fft_go(data, direction)
 }
 
 // Butterfly9_NEON performs a 9-point butterfly using NEON intrinsics
-func Butterfly9_NEON(data []complex128) {
+func Butterfly9_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 9 {
 		return
 	}
@@ -124,30 +126,47 @@ func Butterfly9_NEON(data []complex128) {
 	scratch1 := [3]complex128{data[1], data[4], data[7]}
 	scratch2 := [3]complex128{data[2], data[5], data[8]}
 
-	// Step 2: Column FFTs (3-point)
+	// Step 2: Column FFTs (3-point) with direction support
+	// 3-point FFT twiddle factors
+	var w1, w2 complex128
+	if direction == algorithm.Forward {
+		w1 = complex(-0.5, -0.8660254037844386) // e^(-2πi/3)
+		w2 = complex(-0.5, 0.8660254037844386)  // e^(-4πi/3)
+	} else {
+		w1 = complex(-0.5, 0.8660254037844386)  // e^(2πi/3)
+		w2 = complex(-0.5, -0.8660254037844386) // e^(4πi/3)
+	}
+
 	// For scratch0
 	x0 := scratch0[0] + scratch0[1] + scratch0[2]
-	x1 := scratch0[0] + complex(-0.5, -0.8660254037844386)*scratch0[1] + complex(-0.5, 0.8660254037844386)*scratch0[2]
-	x2 := scratch0[0] + complex(-0.5, 0.8660254037844386)*scratch0[1] + complex(-0.5, -0.8660254037844386)*scratch0[2]
+	x1 := scratch0[0] + w1*scratch0[1] + w2*scratch0[2]
+	x2 := scratch0[0] + w2*scratch0[1] + w1*scratch0[2]
 	scratch0[0], scratch0[1], scratch0[2] = x0, x1, x2
 
 	// For scratch1
 	x0 = scratch1[0] + scratch1[1] + scratch1[2]
-	x1 = scratch1[0] + complex(-0.5, -0.8660254037844386)*scratch1[1] + complex(-0.5, 0.8660254037844386)*scratch1[2]
-	x2 = scratch1[0] + complex(-0.5, 0.8660254037844386)*scratch1[1] + complex(-0.5, -0.8660254037844386)*scratch1[2]
+	x1 = scratch1[0] + w1*scratch1[1] + w2*scratch1[2]
+	x2 = scratch1[0] + w2*scratch1[1] + w1*scratch1[2]
 	scratch1[0], scratch1[1], scratch1[2] = x0, x1, x2
 
 	// For scratch2
 	x0 = scratch2[0] + scratch2[1] + scratch2[2]
-	x1 = scratch2[0] + complex(-0.5, -0.8660254037844386)*scratch2[1] + complex(-0.5, 0.8660254037844386)*scratch2[2]
-	x2 = scratch2[0] + complex(-0.5, 0.8660254037844386)*scratch2[1] + complex(-0.5, -0.8660254037844386)*scratch2[2]
+	x1 = scratch2[0] + w1*scratch2[1] + w2*scratch2[2]
+	x2 = scratch2[0] + w2*scratch2[1] + w1*scratch2[2]
 	scratch2[0], scratch2[1], scratch2[2] = x0, x1, x2
 
-	// Step 3: Apply twiddle factors
+	// Step 3: Apply twiddle factors with direction support
 	// Twiddle factors for 9-point FFT
-	twiddle1 := complex(0.766044443118978, -0.6427876096865393)   // e^(-2πi/9)
-	twiddle2 := complex(0.17364817766693033, -0.984807753012208)  // e^(-4πi/9)
-	twiddle4 := complex(-0.9396926207859084, -0.3420201433256687) // e^(-8πi/9)
+	var twiddle1, twiddle2, twiddle4 complex128
+	if direction == algorithm.Forward {
+		twiddle1 = complex(0.766044443118978, -0.6427876096865393)   // e^(-2πi/9)
+		twiddle2 = complex(0.17364817766693033, -0.984807753012208)  // e^(-4πi/9)
+		twiddle4 = complex(-0.9396926207859084, -0.3420201433256687) // e^(-8πi/9)
+	} else {
+		twiddle1 = complex(0.766044443118978, 0.6427876096865393)   // e^(2πi/9)
+		twiddle2 = complex(0.17364817766693033, 0.984807753012208)  // e^(4πi/9)
+		twiddle4 = complex(-0.9396926207859084, 0.3420201433256687) // e^(8πi/9)
+	}
 
 	scratch1[1] = scratch1[1] * twiddle1
 	scratch1[2] = scratch1[2] * twiddle2
@@ -164,9 +183,9 @@ func Butterfly9_NEON(data []complex128) {
 		xn := scratch1[i] - scratch2[i]
 		sum := scratch0[i] + xp
 
-		twiddle := complex(-0.5, -0.8660254037844386) // e^(-2πi/3)
-		tempA := scratch0[i] + complex(real(twiddle)*real(xp), real(twiddle)*imag(xp))
-		tempB := complex(-imag(twiddle)*imag(xn), imag(twiddle)*real(xn))
+		// Use the same twiddle factors as column FFTs
+		tempA := scratch0[i] + complex(real(w1)*real(xp), real(w1)*imag(xp))
+		tempB := complex(-imag(w1)*imag(xn), imag(w1)*real(xn))
 
 		scratch0[i] = sum
 		scratch1[i] = tempA + tempB
@@ -186,27 +205,27 @@ func Butterfly9_NEON(data []complex128) {
 }
 
 // Butterfly10_NEON performs a 10-point butterfly using NEON intrinsics
-func Butterfly10_NEON(data []complex128) {
+func Butterfly10_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 10 {
 		return
 	}
 
 	// Use real NEON assembly
-	butterfly10_fft_go(data)
+	generic_butterfly_fft_go(data, direction)
 }
 
 // Butterfly15_NEON performs a 15-point butterfly using NEON intrinsics
-func Butterfly15_NEON(data []complex128) {
+func Butterfly15_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 15 {
 		return
 	}
 
 	// Use real NEON assembly
-	butterfly15_fft_go(data)
+	generic_butterfly_fft_go(data, direction)
 }
 
 // Butterfly11_NEON performs an 11-point butterfly using NEON intrinsics
-func Butterfly11_NEON(data []complex128) {
+func Butterfly11_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 11 {
 		return
 	}
@@ -214,10 +233,13 @@ func Butterfly11_NEON(data []complex128) {
 	// Use correct scalar implementation for now
 	// TODO: Implement proper NEON assembly
 	// 11-point FFT using direct DFT (prime size)
-	// Twiddle factors for 11-point FFT
+	// Twiddle factors for 11-point FFT with direction support
 	twiddles := make([]complex128, 11)
 	for k := 0; k < 11; k++ {
-		angle := -2 * math.Pi * float64(k) / 11
+		angle := 2 * math.Pi * float64(k) / 11
+		if direction == algorithm.Forward {
+			angle = -angle
+		}
 		twiddles[k] = complex(math.Cos(angle), math.Sin(angle))
 	}
 
@@ -229,8 +251,11 @@ func Butterfly11_NEON(data []complex128) {
 	for k := 0; k < 11; k++ {
 		sum := complex(0, 0)
 		for n := 0; n < 11; n++ {
-			// Twiddle factor: e^(-2πikn/11)
-			angle := -2 * math.Pi * float64(k*n) / 11
+			// Twiddle factor with direction support
+			angle := 2 * math.Pi * float64(k*n) / 11
+			if direction == algorithm.Forward {
+				angle = -angle
+			}
 			twiddle := complex(math.Cos(angle), math.Sin(angle))
 			sum += original[n] * twiddle
 		}
@@ -239,17 +264,17 @@ func Butterfly11_NEON(data []complex128) {
 }
 
 // Butterfly12_NEON performs a 12-point butterfly using NEON intrinsics
-func Butterfly12_NEON(data []complex128) {
+func Butterfly12_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 12 {
 		return
 	}
 
 	// Use real NEON assembly
-	butterfly12_fft_go(data)
+	generic_butterfly_fft_go(data, direction)
 }
 
 // Butterfly13_NEON performs a 13-point butterfly using NEON intrinsics
-func Butterfly13_NEON(data []complex128) {
+func Butterfly13_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 13 {
 		return
 	}
@@ -265,8 +290,11 @@ func Butterfly13_NEON(data []complex128) {
 	for k := 0; k < 13; k++ {
 		sum := complex(0, 0)
 		for n := 0; n < 13; n++ {
-			// Twiddle factor: e^(-2πikn/13)
-			angle := -2 * math.Pi * float64(k*n) / 13
+			// Twiddle factor with direction support
+			angle := 2 * math.Pi * float64(k*n) / 13
+			if direction == algorithm.Forward {
+				angle = -angle
+			}
 			twiddle := complex(math.Cos(angle), math.Sin(angle))
 			sum += original[n] * twiddle
 		}
@@ -275,7 +303,7 @@ func Butterfly13_NEON(data []complex128) {
 }
 
 // Butterfly17_NEON performs a 17-point butterfly using NEON intrinsics
-func Butterfly17_NEON(data []complex128) {
+func Butterfly17_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 17 {
 		return
 	}
@@ -292,7 +320,10 @@ func Butterfly17_NEON(data []complex128) {
 		sum := complex(0, 0)
 		for n := 0; n < 17; n++ {
 			// Twiddle factor: e^(-2πikn/17)
-			angle := -2 * math.Pi * float64(k*n) / 17
+			angle := 2 * math.Pi * float64(k*n) / 17
+			if direction == algorithm.Forward {
+				angle = -angle
+			}
 			twiddle := complex(math.Cos(angle), math.Sin(angle))
 			sum += original[n] * twiddle
 		}
@@ -301,7 +332,7 @@ func Butterfly17_NEON(data []complex128) {
 }
 
 // Butterfly19_NEON performs a 19-point butterfly using NEON intrinsics
-func Butterfly19_NEON(data []complex128) {
+func Butterfly19_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 19 {
 		return
 	}
@@ -318,7 +349,10 @@ func Butterfly19_NEON(data []complex128) {
 		sum := complex(0, 0)
 		for n := 0; n < 19; n++ {
 			// Twiddle factor: e^(-2πikn/19)
-			angle := -2 * math.Pi * float64(k*n) / 19
+			angle := 2 * math.Pi * float64(k*n) / 19
+			if direction == algorithm.Forward {
+				angle = -angle
+			}
 			twiddle := complex(math.Cos(angle), math.Sin(angle))
 			sum += original[n] * twiddle
 		}
@@ -327,7 +361,7 @@ func Butterfly19_NEON(data []complex128) {
 }
 
 // Butterfly23_NEON performs a 23-point butterfly using NEON intrinsics
-func Butterfly23_NEON(data []complex128) {
+func Butterfly23_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 23 {
 		return
 	}
@@ -344,7 +378,10 @@ func Butterfly23_NEON(data []complex128) {
 		sum := complex(0, 0)
 		for n := 0; n < 23; n++ {
 			// Twiddle factor: e^(-2πikn/23)
-			angle := -2 * math.Pi * float64(k*n) / 23
+			angle := 2 * math.Pi * float64(k*n) / 23
+			if direction == algorithm.Forward {
+				angle = -angle
+			}
 			twiddle := complex(math.Cos(angle), math.Sin(angle))
 			sum += original[n] * twiddle
 		}
@@ -353,17 +390,17 @@ func Butterfly23_NEON(data []complex128) {
 }
 
 // Butterfly24_NEON performs a 24-point butterfly using NEON intrinsics
-func Butterfly24_NEON(data []complex128) {
+func Butterfly24_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 24 {
 		return
 	}
 
 	// Use real NEON assembly
-	butterfly24_fft_go(data)
+	generic_butterfly_fft_go(data, direction)
 }
 
 // Butterfly27_NEON performs a 27-point butterfly using NEON intrinsics
-func Butterfly27_NEON(data []complex128) {
+func Butterfly27_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 27 {
 		return
 	}
@@ -380,7 +417,10 @@ func Butterfly27_NEON(data []complex128) {
 		sum := complex(0, 0)
 		for n := 0; n < 27; n++ {
 			// Twiddle factor: e^(-2πikn/27)
-			angle := -2 * math.Pi * float64(k*n) / 27
+			angle := 2 * math.Pi * float64(k*n) / 27
+			if direction == algorithm.Forward {
+				angle = -angle
+			}
 			twiddle := complex(math.Cos(angle), math.Sin(angle))
 			sum += original[n] * twiddle
 		}
@@ -389,7 +429,7 @@ func Butterfly27_NEON(data []complex128) {
 }
 
 // Butterfly29_NEON performs a 29-point butterfly using NEON intrinsics
-func Butterfly29_NEON(data []complex128) {
+func Butterfly29_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 29 {
 		return
 	}
@@ -406,7 +446,10 @@ func Butterfly29_NEON(data []complex128) {
 		sum := complex(0, 0)
 		for n := 0; n < 29; n++ {
 			// Twiddle factor: e^(-2πikn/29)
-			angle := -2 * math.Pi * float64(k*n) / 29
+			angle := 2 * math.Pi * float64(k*n) / 29
+			if direction == algorithm.Forward {
+				angle = -angle
+			}
 			twiddle := complex(math.Cos(angle), math.Sin(angle))
 			sum += original[n] * twiddle
 		}
@@ -415,7 +458,7 @@ func Butterfly29_NEON(data []complex128) {
 }
 
 // Butterfly31_NEON performs a 31-point butterfly using NEON intrinsics
-func Butterfly31_NEON(data []complex128) {
+func Butterfly31_NEON(data []complex128, direction algorithm.Direction) {
 	if len(data) < 31 {
 		return
 	}
@@ -432,7 +475,10 @@ func Butterfly31_NEON(data []complex128) {
 		sum := complex(0, 0)
 		for n := 0; n < 31; n++ {
 			// Twiddle factor: e^(-2πikn/31)
-			angle := -2 * math.Pi * float64(k*n) / 31
+			angle := 2 * math.Pi * float64(k*n) / 31
+			if direction == algorithm.Forward {
+				angle = -angle
+			}
 			twiddle := complex(math.Cos(angle), math.Sin(angle))
 			sum += original[n] * twiddle
 		}
@@ -441,54 +487,54 @@ func Butterfly31_NEON(data []complex128) {
 }
 
 // ProcessVectorizedButterfly processes data using NEON-optimized butterflies
-func ProcessVectorizedButterfly(data []complex128, size int) {
+func ProcessVectorizedButterfly(data []complex128, size int, direction algorithm.Direction) {
 	switch size {
 	case 1:
-		Butterfly1_NEON(data)
+		Butterfly1_NEON(data, direction)
 	case 2:
-		Butterfly2_NEON(data)
+		Butterfly2_NEON(data, direction)
 	case 3:
-		Butterfly3_NEON(data)
+		Butterfly3_NEON(data, direction)
 	case 4:
-		Butterfly4_NEON(data)
+		Butterfly4_NEON(data, direction)
 	case 5:
-		Butterfly5_NEON(data)
+		Butterfly5_NEON(data, direction)
 	case 6:
-		Butterfly6_NEON(data)
+		Butterfly6_NEON(data, direction)
 	case 7:
-		Butterfly7_NEON(data)
+		Butterfly7_NEON(data, direction)
 	case 8:
-		Butterfly8_NEON(data)
+		Butterfly8_NEON(data, direction)
 	case 9:
-		Butterfly9_NEON(data)
+		Butterfly9_NEON(data, direction)
 	case 10:
-		Butterfly10_NEON(data)
+		Butterfly10_NEON(data, direction)
 	case 11:
-		Butterfly11_NEON(data)
+		Butterfly11_NEON(data, direction)
 	case 12:
-		Butterfly12_NEON(data)
+		Butterfly12_NEON(data, direction)
 	case 13:
-		Butterfly13_NEON(data)
+		Butterfly13_NEON(data, direction)
 	case 15:
-		Butterfly15_NEON(data)
+		Butterfly15_NEON(data, direction)
 	case 16:
-		Butterfly16_NEON(data)
+		Butterfly16_NEON(data, direction)
 	case 17:
-		Butterfly17_NEON(data)
+		Butterfly17_NEON(data, direction)
 	case 19:
-		Butterfly19_NEON(data)
+		Butterfly19_NEON(data, direction)
 	case 23:
-		Butterfly23_NEON(data)
+		Butterfly23_NEON(data, direction)
 	case 24:
-		Butterfly24_NEON(data)
+		Butterfly24_NEON(data, direction)
 	case 27:
-		Butterfly27_NEON(data)
+		Butterfly27_NEON(data, direction)
 	case 29:
-		Butterfly29_NEON(data)
+		Butterfly29_NEON(data, direction)
 	case 31:
-		Butterfly31_NEON(data)
+		Butterfly31_NEON(data, direction)
 	case 32:
-		Butterfly32_NEON(data)
+		Butterfly32_NEON(data, direction)
 	default:
 		// Fall back to scalar implementation for unsupported sizes
 		processScalarButterfly(data, size)

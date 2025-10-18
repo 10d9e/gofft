@@ -50,15 +50,15 @@ func (f *NEONFFT) processChunk(data []complex128) {
 
 	switch f.length {
 	case 2:
-		Butterfly2_NEON(data)
+		Butterfly2_NEON(data, f.direction)
 	case 4:
-		Butterfly4_NEON(data)
+		Butterfly4_NEON(data, f.direction)
 	case 8:
-		Butterfly8_NEON(data)
+		Butterfly8_NEON(data, f.direction)
 	case 16:
-		Butterfly16_NEON(data)
+		Butterfly16_NEON(data, f.direction)
 	case 32:
-		Butterfly32_NEON(data)
+		Butterfly32_NEON(data, f.direction)
 	default:
 		// For unsupported sizes, fall back to scalar implementation
 		f.processScalar(data)
@@ -94,7 +94,7 @@ func (f *NEONButterflyFFT) Process(buffer []complex128) {
 	// Process each chunk using NEON butterflies
 	for i := 0; i < len(buffer); i += f.length {
 		chunk := buffer[i : i+f.length]
-		ProcessVectorizedButterfly(chunk, f.length)
+		ProcessVectorizedButterfly(chunk, f.length, f.direction)
 	}
 }
 

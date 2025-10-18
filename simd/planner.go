@@ -6,6 +6,14 @@ import (
 	"github.com/10d9e/gofft/simd/neon"
 )
 
+// toAlgoDirection converts gofft.Direction to algorithm.Direction
+func toAlgoDirection(d gofft.Direction) algorithm.Direction {
+	if d == gofft.Forward {
+		return algorithm.Forward
+	}
+	return algorithm.Inverse
+}
+
 // SIMDPlanner creates FFT instances optimized for SIMD
 type SIMDPlanner struct {
 	level SIMDLevel
@@ -152,41 +160,41 @@ func (a *neonButterflyAdapter) Process(buffer []complex128) {
 	// Use actual NEON butterfly implementations
 	switch a.length {
 	case 1:
-		neon.Butterfly1_NEON(buffer)
+		neon.Butterfly1_NEON(buffer, a.direction)
 	case 2:
-		neon.Butterfly2_NEON(buffer)
+		neon.Butterfly2_NEON(buffer, a.direction)
 	case 3:
-		neon.Butterfly3_NEON(buffer)
+		neon.Butterfly3_NEON(buffer, a.direction)
 	case 4:
-		neon.Butterfly4_NEON(buffer)
+		neon.Butterfly4_NEON(buffer, a.direction)
 	case 5:
-		neon.Butterfly5_NEON(buffer)
+		neon.Butterfly5_NEON(buffer, a.direction)
 	case 7:
-		neon.Butterfly7_NEON(buffer)
+		neon.Butterfly7_NEON(buffer, a.direction)
 	case 8:
-		neon.Butterfly8_NEON(buffer)
+		neon.Butterfly8_NEON(buffer, a.direction)
 	case 9:
-		neon.Butterfly9_NEON(buffer)
+		neon.Butterfly9_NEON(buffer, a.direction)
 	case 11:
-		neon.Butterfly11_NEON(buffer)
+		neon.Butterfly11_NEON(buffer, a.direction)
 	case 13:
-		neon.Butterfly13_NEON(buffer)
+		neon.Butterfly13_NEON(buffer, a.direction)
 	case 16:
-		neon.Butterfly16_NEON(buffer)
+		neon.Butterfly16_NEON(buffer, a.direction)
 	case 17:
-		neon.Butterfly17_NEON(buffer)
+		neon.Butterfly17_NEON(buffer, a.direction)
 	case 19:
-		neon.Butterfly19_NEON(buffer)
+		neon.Butterfly19_NEON(buffer, a.direction)
 	case 23:
-		neon.Butterfly23_NEON(buffer)
+		neon.Butterfly23_NEON(buffer, a.direction)
 	case 27:
-		neon.Butterfly27_NEON(buffer)
+		neon.Butterfly27_NEON(buffer, a.direction)
 	case 29:
-		neon.Butterfly29_NEON(buffer)
+		neon.Butterfly29_NEON(buffer, a.direction)
 	case 31:
-		neon.Butterfly31_NEON(buffer)
+		neon.Butterfly31_NEON(buffer, a.direction)
 	case 32:
-		neon.Butterfly32_NEON(buffer)
+		neon.Butterfly32_NEON(buffer, a.direction)
 	default:
 		// Fallback to scalar for unsupported sizes
 		scalarFft := algorithm.NewDft(a.length, a.direction)
@@ -213,15 +221,27 @@ func (a *neonRadix4Adapter) Process(buffer []complex128) {
 	// Use actual NEON Radix-4 implementations
 	switch a.length {
 	case 64:
-		neon.Radix4_64_NEON(buffer)
+		neon.Radix4_64_NEON(buffer, a.direction)
 	case 128:
-		neon.Radix4_128_NEON(buffer)
+		neon.Radix4_128_NEON(buffer, a.direction)
 	case 256:
-		neon.Radix4_256_NEON(buffer)
+		neon.Radix4_256_NEON(buffer, a.direction)
 	case 512:
-		neon.Radix4_512_NEON(buffer)
+		neon.Radix4_512_NEON(buffer, a.direction)
 	case 1024:
-		neon.Radix4_1024_NEON(buffer)
+		neon.Radix4_1024_NEON(buffer, a.direction)
+	case 2048:
+		neon.Radix4_2048_NEON(buffer, a.direction)
+	case 4096:
+		neon.Radix4_4096_NEON(buffer, a.direction)
+	case 8192:
+		neon.Radix4_8192_NEON(buffer, a.direction)
+	case 16384:
+		neon.Radix4_16384_NEON(buffer, a.direction)
+	case 32768:
+		neon.Radix4_32768_NEON(buffer, a.direction)
+	case 65536:
+		neon.Radix4_65536_NEON(buffer, a.direction)
 	default:
 		// Fallback to scalar for unsupported sizes
 		scalarFft := algorithm.NewDft(a.length, a.direction)

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"testing"
 	"unsafe"
+
+	"github.com/10d9e/gofft/algorithm"
 )
 
 func TestNEONRadix4(t *testing.T) {
@@ -29,7 +31,7 @@ func TestNEONRadix4(t *testing.T) {
 			}
 
 			// Apply NEON Radix-4
-			ProcessVectorizedRadix4(data, tc.size)
+			ProcessVectorizedRadix4(data, tc.size, algorithm.Forward)
 
 			// Verify we got some result (not all zeros)
 			hasNonZero := false
@@ -59,7 +61,7 @@ func TestRadix4_64_NEON(t *testing.T) {
 	original := make([]complex128, len(data))
 	copy(original, data)
 
-	Radix4_64_NEON(data)
+	Radix4_64_NEON(data, algorithm.Forward)
 
 	// Verify we got a result
 	hasNonZero := false
@@ -97,7 +99,7 @@ func TestRadix4_128_NEON(t *testing.T) {
 		data[i] = complex(float64(i%16), float64(i%9)*0.2)
 	}
 
-	Radix4_128_NEON(data)
+	Radix4_128_NEON(data, algorithm.Forward)
 
 	// Verify we got a result
 	hasNonZero := false
@@ -122,7 +124,7 @@ func TestRadix4_256_NEON(t *testing.T) {
 		data[i] = complex(float64(i%32), float64(i%11)*0.15)
 	}
 
-	Radix4_256_NEON(data)
+	Radix4_256_NEON(data, algorithm.Forward)
 
 	// Verify we got a result
 	hasNonZero := false
@@ -147,7 +149,7 @@ func TestRadix4_512_NEON(t *testing.T) {
 		data[i] = complex(float64(i%64), float64(i%13)*0.1)
 	}
 
-	Radix4_512_NEON(data)
+	Radix4_512_NEON(data, algorithm.Forward)
 
 	// Verify we got a result
 	hasNonZero := false
@@ -172,7 +174,7 @@ func TestRadix4_1024_NEON(t *testing.T) {
 		data[i] = complex(float64(i%128), float64(i%17)*0.05)
 	}
 
-	Radix4_1024_NEON(data)
+	Radix4_1024_NEON(data, algorithm.Forward)
 
 	// Verify we got a result
 	hasNonZero := false
@@ -200,7 +202,7 @@ func TestProcessVectorizedRadix4(t *testing.T) {
 				data[i] = complex(float64(i%19), float64(i%7)*0.3)
 			}
 
-			ProcessVectorizedRadix4(data, size)
+			ProcessVectorizedRadix4(data, size, algorithm.Forward)
 
 			// Verify we got a result
 			hasNonZero := false
@@ -360,7 +362,7 @@ func BenchmarkNEONRadix4(b *testing.B) {
 
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				ProcessVectorizedRadix4(data, size)
+				ProcessVectorizedRadix4(data, size, algorithm.Forward)
 			}
 		})
 	}
@@ -374,7 +376,7 @@ func BenchmarkRadix4_64_NEON(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Radix4_64_NEON(data)
+		Radix4_64_NEON(data, algorithm.Forward)
 	}
 }
 
@@ -386,7 +388,7 @@ func BenchmarkRadix4_128_NEON(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Radix4_128_NEON(data)
+		Radix4_128_NEON(data, algorithm.Forward)
 	}
 }
 
@@ -398,7 +400,7 @@ func BenchmarkRadix4_256_NEON(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Radix4_256_NEON(data)
+		Radix4_256_NEON(data, algorithm.Forward)
 	}
 }
 
@@ -410,7 +412,7 @@ func BenchmarkRadix4_512_NEON(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Radix4_512_NEON(data)
+		Radix4_512_NEON(data, algorithm.Forward)
 	}
 }
 
@@ -422,7 +424,7 @@ func BenchmarkRadix4_1024_NEON(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Radix4_1024_NEON(data)
+		Radix4_1024_NEON(data, algorithm.Forward)
 	}
 }
 
