@@ -740,8 +740,8 @@ func radix4_64_fft_go(data []complex128, direction algorithm.Direction) {
 		return
 	}
 
-	// Call assembly function
-	generic_butterfly_fft_go(data, direction)
+	// Use real NEON assembly for maximum performance
+	radix4_64_fft_asm(unsafe.Pointer(&data[0]))
 }
 
 // radix4_128_fft_go performs a 128-point Radix-4 FFT using real NEON assembly
@@ -750,8 +750,8 @@ func radix4_128_fft_go(data []complex128, direction algorithm.Direction) {
 		return
 	}
 
-	// Call assembly function
-	generic_butterfly_fft_go(data, direction)
+	// Use real NEON assembly for maximum performance
+	radix4_128_fft_asm(unsafe.Pointer(&data[0]))
 }
 
 // radix4_256_fft_go performs a 256-point Radix-4 FFT using real NEON assembly
@@ -760,8 +760,8 @@ func radix4_256_fft_go(data []complex128, direction algorithm.Direction) {
 		return
 	}
 
-	// Call assembly function
-	generic_butterfly_fft_go(data, direction)
+	// Use real NEON assembly for maximum performance
+	radix4_256_fft_asm(unsafe.Pointer(&data[0]))
 }
 
 // radix4_512_fft_go performs a 512-point Radix-4 FFT using real NEON assembly
@@ -770,8 +770,8 @@ func radix4_512_fft_go(data []complex128, direction algorithm.Direction) {
 		return
 	}
 
-	// Call assembly function
-	generic_butterfly_fft_go(data, direction)
+	// Use real NEON assembly for maximum performance
+	radix4_512_fft_asm(unsafe.Pointer(&data[0]))
 }
 
 // radix4_fft_go performs a general Radix4 FFT with direction support

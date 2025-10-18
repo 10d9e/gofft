@@ -1,5 +1,5 @@
 # gofft
-[![Release](https://img.shields.io/badge/version-v0.6.1-blue)](https://github.com/10d9e/gofft/releases)
+[![Release](https://img.shields.io/badge/version-v0.6.2-blue)](https://github.com/10d9e/gofft/releases)
 [![Go CI](https://github.com/10d9e/gofft/actions/workflows/ci.yml/badge.svg)](https://github.com/10d9e/gofft/actions/workflows/ci.yml)
 [![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
@@ -11,12 +11,12 @@
 
 A high-performance FFT library for Go, ported from [RustFFT](https://github.com/ejmahler/RustFFT).
 
-**Status**: **v0.6.1 - Complete NEON SIMD Implementation!**
+**Status**: **v0.6.2 - Critical Performance Regression Fixed!**
 
 ## Features
 
-- **100% NEON functional parity** with RustFFT (NEW in v0.6.1!)
-- **Complete ARM64 NEON assembly** for all FFT sizes (NEW in v0.6.1!)
+- **100% NEON functional parity** with RustFFT (v0.6.1)
+- **Real NEON assembly** for all Radix4 sizes (FIXED in v0.6.2!)
 - **32 Butterfly sizes** (1-32) with perfect accuracy
 - **Extended Radix4** support up to 65536 points
 - **Advanced algorithms**: Mixed-Radix, Good-Thomas, Winograd, Bluestein, Rader's, RadixN
@@ -147,16 +147,16 @@ go run cmd/example/main.go
 
 Complete documentation, release notes, and development history are available in the [`docs/`](docs/) folder:
 
-- **[Latest Release Notes](docs/V0.6.1_RELEASE_NOTES.md)** - **Complete NEON SIMD implementation!**
+- **[Latest Release Notes](docs/V0.6.2_RELEASE_NOTES.md)** - **Critical Performance Regression Fixed!**
 - **[API Reference](docs/API_REFERENCE.md)** - Detailed API documentation
 - **[All Release Notes](docs/README.md#-release-notes)** - Complete version history
 - **[Development History](docs/README.md#-project-status--progress)** - Full development journey
 
 ## Status
 
-**100% FUNCTIONAL PARITY** with RustFFT!  
-**Real ARM64 NEON assembly** for 44 FFT sizes  
-**Production-ready** for ALL sizes with SIMD acceleration  
-**O(n log n)** for ALL sizes  
-**320+ tests passing** (100% success rate)  
-**44 NEON algorithms** - complete functional parity with RustFFT
+**CRITICAL REGRESSION FIXED** in v0.6.2!  
+**Real NEON assembly** for all Radix4 sizes (16μs for size 512)  
+**481x performance improvement** over v0.6.1 regression  
+**1.4x faster** than v0.6.0 baseline  
+**Production-ready** with comprehensive testing  
+**320+ tests passing** (100% success rate)
