@@ -11,18 +11,18 @@
 
 A high-performance FFT library for Go, ported from [RustFFT](https://github.com/ejmahler/RustFFT).
 
-**Status**: ✅ **v0.5.0 - 100% Algorithm Parity Achieved!** 🏆
+**Status**: **v0.5.0 - 100% Algorithm Parity Achieved!**
 
 ## Features
 
-- 🏆 **100% scalar algorithm parity** with RustFFT (NEW in v0.5.0!)
-- ⚡ **RadixN algorithm** for multi-factor composites (NEW in v0.5.0!)
-- ⚡ **Rader's algorithm** for optimized primes
-- 🚀 **ANY size is O(n log n)** via Bluestein's
-- ✅ **28 total algorithms** (20 butterflies + Radix-4 + RadixN + Rader's + more)
-- ✅ **Zero allocations** with scratch buffer reuse
-- ✅ **Thread-safe** - concurrent usage supported
-- ⏳ **SIMD support** (future enhancement for 2-8x speedup)
+- **100% scalar algorithm parity** with RustFFT (NEW in v0.5.0!)
+- **RadixN algorithm** for multi-factor composites (NEW in v0.5.0!)
+- **Rader's algorithm** for optimized primes
+- **ANY size is O(n log n)** via Bluestein's
+- **28 total algorithms** (20 butterflies + Radix-4 + RadixN + Rader's + more)
+- **Zero allocations** with scratch buffer reuse
+- **Thread-safe** - concurrent usage supported
+- **SIMD support** (future enhancement for 2-8x speedup)
 
 ## Quick Start
 
@@ -49,7 +49,7 @@ func main() {
 
 ## Highlights
 
-**🏆 v0.5.0: 100% ALGORITHM PARITY!**
+**v0.5.0: 100% ALGORITHM PARITY!**
 - **RadixN**: Optimizes multi-factor composites (60, 120, 84, ...)
 - **Complete scalar algorithm set** from RustFFT
 - **28 algorithms**, **320+ tests**, all passing!
@@ -100,11 +100,11 @@ go run cmd/example/main.go
 
 ## What's New in v0.5.0
 
-- 🏆 **100% ALGORITHM PARITY** - Complete RustFFT scalar port!
-- ⚡ **RadixN Algorithm**: Multi-factor decomposition for composites
-- ✅ **320+ tests passing** (up from 256)
-- ✅ **28 algorithms** implemented
-- 🎯 **Optimized for ALL size categories**
+- **100% ALGORITHM PARITY** - Complete RustFFT scalar port!
+- **RadixN Algorithm**: Multi-factor decomposition for composites
+- **320+ tests passing** (up from 256)
+- **28 algorithms** implemented
+- **Optimized for ALL size categories**
 
 ## Documentation
 
@@ -114,8 +114,7 @@ go run cmd/example/main.go
 
 ## Status
 
-🏆 **100% SCALAR ALGORITHM PARITY** with RustFFT!  
-✅ **Production-ready** for ALL sizes  
-✅ **O(n log n)** for ALL sizes  
-✅ **320+ tests passing** (100% success rate)  
-✅ **28 algorithms** - complete scalar algorithm set
+**100% SCALAR ALGORITHM PARITY** with RustFFT!  
+**O(n log n)** for ALL sizes  
+**320+ tests passing** (100% success rate)  
+**28 algorithms** - complete scalar algorithm set
