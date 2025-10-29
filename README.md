@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/10d9e/gofft)](https://goreportcard.com/report/github.com/10d9e/gofft)
 [![Tests](https://img.shields.io/badge/tests-256%20passing-success)](https://github.com/10d9e/gofft)
-[![DAITU](https://img.shields.io/badge/AI-Assisted-blue.svg)](DAITU)
+[![DAITU](https://img.shields.io/badge/AI-DAITU%201.0-blue.svg)](DAITU)
 
 <img width="300" height="300" alt="image" src="https://github.com/user-attachments/assets/a45b2e1a-ee46-4c50-9dea-1b06d56ffc35" />
 
